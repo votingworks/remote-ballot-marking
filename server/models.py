@@ -1,12 +1,17 @@
-from typing import Type, TypeVar
+from typing import Type
 from datetime import datetime as dt, timezone
 from werkzeug.exceptions import NotFound
 from sqlalchemy import *
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TypeDecorator
-from .database import Base  # pylint: disable=cyclic-import
+from .database import Base, db_session  # pylint: disable=cyclic-import
 
-C = TypeVar("C")  # pylint: disable=invalid-name
+
+def get_or_404(model: Type[Base], primary_key: str):
+    instance = model.query.get(primary_key)
+    if instance:
+        return instance
+    raise NotFound(f"{model.__class__.__name__} {primary_key} not found")
 
 
 class UTCDateTime(TypeDecorator):  # pylint: disable=abstract-method
@@ -44,8 +49,44 @@ class Organization(BaseModel):
     name = Column(String(200), nullable=False, unique=True)
 
 
-def get_or_404(model: Type[Base], primary_key: str):
-    instance = model.query.get(primary_key)
-    if instance:
-        return instance
-    raise NotFound(f"{model.__class__.__name__} {primary_key} not found")
+class AdminUser(BaseModel):
+    id = Column(String(200), primary_key=True)
+    email = Column(String(200), unique=True, nullable=False)
+
+    organization_id = Column(
+        String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
+    )
+
+
+class Election(BaseModel):
+    id = Column(String(200), primary_key=True)
+    name = Column(String(200), nullable=False)
+
+    organization_id = Column(
+        String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
+    )
+
+    definition = Column(JSON)
+
+    __table_args__ = (UniqueConstraint("organization_id", "name"),)
+
+
+class Voter(BaseModel):
+    id = Column(String(200), primary_key=True)
+    voter_id = Column(String(200), nullable=False)
+    email = Column(String(200), nullable=False)
+    precinct = Column(String(200), nullable=False)  # Must match Election.definition
+    ballot_style = Column(String(200), nullable=False)  # Must match Election.definition
+
+    election_id = Column(
+        String(200), ForeignKey("election.id", ondelete="cascade"), nullable=False
+    )
+
+    ballot_url_key = Column(String(200))
+    ballot_email_last_sent_at = Column(UTCDateTime)
+
+    __table_args__ = (
+        UniqueConstraint("election_id", "voter_id"),
+        UniqueConstraint("election_id", "email"),
+        UniqueConstraint("ballot_url_key"),
+    )
