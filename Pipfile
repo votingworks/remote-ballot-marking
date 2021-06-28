@@ -12,6 +12,7 @@ pylint = "*"
 black = "==19.10b0"
 
 [packages]
+auth0-python = "*"
 authlib = "*"
 flask = "*"
 flask-httpauth = "*"
@@ -21,7 +22,7 @@ requests = "*"
 sqlalchemy-utils = "*"
 sqlalchemy = "*"
 sentry-sdk = {extras = ["flask"], version = "*"}
-auth0-python = "*"
+uuid = "*"
 
 [requires]
 python_version = "3.8"
