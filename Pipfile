@@ -1,0 +1,29 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+mypy = "*"
+sqlalchemy-stubs = "*"
+pylint = "*"
+# black only has pre-releases available, so we have to specify a specific version
+# for now (or enable pre-releases for all packages, which we don't want)
+black = "==19.10b0"
+
+[packages]
+authlib = "*"
+flask = "*"
+flask-httpauth = "*"
+flask-talisman = "*"
+psycopg2-binary = "*"
+requests = "*"
+# sqlalchemy-utils 0.36.8 introduced a bug
+# Can probably reset this to * once the next patch comes out
+sqlalchemy-utils = "==0.36.7"
+sqlalchemy = "*"
+sentry-sdk = {extras = ["flask"], version = "*"}
+auth0-python = "*"
+
+[requires]
+python_version = "3.8"
