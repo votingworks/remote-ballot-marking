@@ -1,8 +1,6 @@
 import React from 'react'
 
-let x = 1
-
-function App() {
+const App: React.FC = () => {
   return (
     <div>
       <header>

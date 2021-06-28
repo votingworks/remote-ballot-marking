@@ -8,21 +8,19 @@ module.exports = {
     node: true,
     es6: true,
     'jest/globals': true,
-    'cypress/globals': true,
+    // 'cypress/globals': true,
   },
   parser: '@typescript-eslint/parser', // Specifies the ESLint parser
   extends: [
-    'airbnb',
+    'airbnb-typescript',
     'plugin:import/errors',
     'plugin:import/warnings',
     'plugin:import/typescript',
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended', // Uses the recommended rules from @typescript-eslint/eslint-plugin
-    'prettier/@typescript-eslint', // Uses eslint-config-prettier to disable ESLint rules from @typescript-eslint/eslint-plugin that would conflict with prettier
     'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
     'plugin:react/recommended', // Uses the recommended rules from @eslint-plugin-react
     'plugin:jsx-a11y/recommended',
-    'prettier/react', // Overrides some of the rules in 'airbnb' to have more relaxed formatting in react.
     // 'plugin:cypress/recommended',
     'plugin:testing-library/react',
     'plugin:jest-dom/recommended',
@@ -48,7 +46,7 @@ module.exports = {
     '@typescript-eslint',
     'jest',
     'react',
-    'cypress',
+    // 'cypress',
     'jsx-a11y',
     'react-hooks',
     'testing-library',
