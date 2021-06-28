@@ -52,7 +52,6 @@ class Organization(BaseModel):
 class AdminUser(BaseModel):
     id = Column(String(200), primary_key=True)
     email = Column(String(200), unique=True, nullable=False)
-    external_id = Column(String(200), unique=True)
 
     organization_id = Column(
         String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
@@ -67,17 +66,9 @@ class Election(BaseModel):
         String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
     )
 
-    definition_file_id = Column(String(200), ForeignKey("file.id", ondelete="cascade"))
     definition = Column(JSON)
 
-    voter_file_id = Column(String(200), ForeignKey("file.id", ondelete="cascade"))
-
     __table_args__ = (UniqueConstraint("organization_id", "name"),)
-
-
-class File(BaseModel):
-    id = Column(String(200), primary_key=True)
-    contents = Column(Text)
 
 
 class Voter(BaseModel):
