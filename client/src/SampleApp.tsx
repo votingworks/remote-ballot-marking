@@ -1,12 +1,10 @@
 import * as React from 'react'
 import { VoterCardData, electionSample } from '@votingworks/ballot-encoder'
-import App, { Props } from './App'
 import { Card, MemoryCard } from './utils/Card'
 import utcTimestamp from './utils/utcTimestamp'
 import { Storage, MemoryStorage } from './utils/Storage'
 import { AppStorage } from './AppRoot'
 import { Provider, MachineConfig, VxMarkPlusVxPrint } from './config/types'
-import { MemoryHardware } from './utils/Hardware'
 
 const ballotStyleId = '12'
 const precinctId = '23'
@@ -57,20 +55,6 @@ export function getSampleMachineConfigProvider(): Provider<MachineConfig> {
 }
 
 /* istanbul ignore next */
-const SampleApp = ({
-  card = getSampleCard(),
-  storage = getSampleStorage(),
-  machineConfig = getSampleMachineConfigProvider(),
-  hardware = MemoryHardware.demo,
-  ...rest
-}: Props) => (
-  <App
-    card={card}
-    storage={storage}
-    machineConfig={machineConfig}
-    hardware={hardware}
-    {...rest}
-  />
-)
+const SampleApp = () => <h1>no sample app</h1>
 
 export default SampleApp

@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback } from 'react'
 import { BrowserRouter, Route } from 'react-router-dom'
+
+import { electionSample } from '@votingworks/ballot-encoder'
+import Ballot from './components/Ballot'
+import BallotContext from './contexts/ballotContext'
+
+import { VxMarkOnly } from './config/types'
 
 import 'normalize.css'
 import './App.css'
@@ -10,26 +16,21 @@ import {
   AriaScreenReader,
   SpeechSynthesisTextToSpeech,
 } from './utils/ScreenReader'
-import { WebServiceCard } from './utils/Card'
-import { LocalStorage } from './utils/Storage'
-import { getUSEnglishVoice } from './utils/voices'
-import getPrinter from './utils/printer'
-import { getHardware, isAccessibleController } from './utils/Hardware'
+import { Storage } from './utils/Storage'
+import { AppStorage } from './AppRoot'
 
-import AppRoot, { Props as AppRootProps, AppStorage } from './AppRoot'
+import { getUSEnglishVoice } from './utils/voices'
+import getPrinter, { Printer } from './utils/printer'
+
 import FocusManager from './components/FocusManager'
-import machineConfigProvider from './utils/machineConfig'
 
 window.oncontextmenu = (e: MouseEvent): void => {
   e.preventDefault()
 }
 
 export interface Props {
-  hardware?: AppRootProps['hardware']
-  card?: AppRootProps['card']
-  storage?: AppRootProps['storage']
-  printer?: AppRootProps['printer']
-  machineConfig?: AppRootProps['machineConfig']
+  storage?: Storage<AppStorage>
+  printer?: Printer
   screenReader?: ScreenReader
 }
 
@@ -37,24 +38,10 @@ const App = ({
   screenReader = new AriaScreenReader(
     new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
   ),
-  card = new WebServiceCard(),
-  storage = new LocalStorage<AppStorage>(),
+  //storage = new LocalStorage<AppStorage>(),
   printer = getPrinter(),
-  hardware = getHardware(),
-  machineConfig = machineConfigProvider,
 }: Props) => {
   screenReader.mute()
-
-  /* istanbul ignore next - need to figure out how to test this */
-  useEffect(() => {
-    const subscription = hardware.devices.subscribe((devices) =>
-      screenReader.toggleMuted(
-        !Array.from(devices).some(isAccessibleController)
-      )
-    )
-
-    return () => subscription.unsubscribe()
-  }, [hardware, screenReader])
 
   /* istanbul ignore next - need to figure out how to test this */
   const onKeyPress = useCallback(
@@ -117,15 +104,34 @@ const App = ({
       >
         <Route
           path="/"
-          render={(props) => (
-            <AppRoot
-              card={card}
-              printer={printer}
-              hardware={hardware}
-              storage={storage}
-              machineConfig={machineConfig}
-              {...props}
-            />
+          render={() => (
+            <BallotContext.Provider
+              value={{
+                activateBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                markVoterCardPrinted: async () => {
+                  return true
+                },
+                markVoterCardVoided: async () => {
+                  return true
+                },
+                resetBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                setUserSettings: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                updateTally: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                updateVote: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                forceSaveVote: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                userSettings: { textSize: 0 },
+                votes: {},
+                machineConfig: { machineId: 'foobar', appMode: VxMarkOnly },
+                ballotStyleId: 'foo',
+                contests: [],
+                election: electionSample,
+                isLiveMode: true,
+                precinctId: 'bar',
+                printer: printer,
+              }}
+            >
+              <Ballot />
+            </BallotContext.Provider>
           )}
         />
       </FocusManager>
