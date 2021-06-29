@@ -24,7 +24,7 @@ export const apiFetch = async <T extends unknown>(
   return null
 }
 
-interface User {
+export interface AdminUser {
   name: string
   email: string
   organization: {
@@ -34,4 +34,4 @@ interface User {
 }
 
 export const useAdminUser = () =>
-  useQuery('user', () => apiFetch<User>('/auth/me'))
+  useQuery('adminUser', () => apiFetch<AdminUser>('/auth/me'))
