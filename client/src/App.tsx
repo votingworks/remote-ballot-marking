@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Route, Switch } from 'react-router-dom'
 import { ApiProvider, useAdminUser, AdminUser } from './api'
+import BallotUI from './bmd/BallotUI'
 
 const AdminHome = ({ user }: { user: AdminUser }) => {
   return (
@@ -30,6 +31,8 @@ const LoginScreen = () => (
   </div>
 )
 
+const BallotTestScreen = () => <BallotUI />
+
 const Routes = () => {
   const userQuery = useAdminUser()
   if (userQuery.isLoading || userQuery.isIdle) return null
@@ -41,7 +44,7 @@ const Routes = () => {
     <BrowserRouter>
       <Switch>
         <Route path="/ballot">
-          <p>Ballot component goes here</p>
+          <BallotTestScreen />
         </Route>
         <Route path="/">
           <AdminHome user={user} />
