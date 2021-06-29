@@ -15,6 +15,7 @@ from .config import (
     STATIC_FOLDER,
 )
 from .database import init_db, db_session, engine
+from .auth import auth, oauth
 
 # from .api import api
 # from .auth import auth
@@ -45,10 +46,10 @@ app.secret_key = SESSION_SECRET
 
 init_db()
 
-# oauth.init_app(app)
+oauth.init_app(app)
 
 # app.register_blueprint(api, url_prefix="/api")
-# app.register_blueprint(auth)
+app.register_blueprint(auth)
 
 # pylint: disable=wrong-import-position,cyclic-import,unused-import
 from . import static
