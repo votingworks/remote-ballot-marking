@@ -96,6 +96,7 @@ module.exports = {
     'class-methods-use-this': 'off',
     'no-nested-ternary': 'off',
     'new-cap': 'off',
+    'consistent-return': 'off',
     // 'testing-library/prefer-wait-for': 'error',
     // 'testing-library/no-wait-for-empty-callback': 'error',
   },
