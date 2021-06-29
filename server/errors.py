@@ -13,7 +13,7 @@ from .app import app
 @app.errorhandler(BadRequest)
 def handle_400(error):
     return (
-        jsonify(errors=[{"message": error.description, "errorType": "Bad Request"}]),
+        jsonify(status="error", message=error.description, errorType="Bad Request"),
         BadRequest.code,
     )
 
@@ -21,7 +21,7 @@ def handle_400(error):
 @app.errorhandler(Unauthorized)
 def handle_401(error):
     return (
-        jsonify(errors=[{"message": error.description, "errorType": "Unauthorized"}]),
+        jsonify(status="error", message=error.description, errorType="Unauthorized"),
         Unauthorized.code,
     )
 
@@ -29,7 +29,7 @@ def handle_401(error):
 @app.errorhandler(Conflict)
 def handle_409(error):
     return (
-        jsonify(errors=[{"message": error.description, "errorType": "Conflict"}]),
+        jsonify(status="error", message=error.description, errorType="Conflict"),
         Conflict.code,
     )
 
@@ -37,7 +37,7 @@ def handle_409(error):
 @app.errorhandler(Forbidden)
 def handle_403(error):
     return (
-        jsonify(errors=[{"message": error.description, "errorType": "Forbidden"}]),
+        jsonify(status="error", message=error.description, errorType="Forbidden"),
         Forbidden.code,
     )
 
@@ -53,7 +53,7 @@ def handle_500(error):
     # wrapped unhandled error
     return (
         jsonify(
-            errors=[{"message": str(original), "errorType": "Internal Server Error"}]
+            status="error", message=error.description, errorType="Internal Server Error"
         ),
         InternalServerError.code,
     )

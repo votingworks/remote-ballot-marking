@@ -56,6 +56,7 @@ class AdminUser(BaseModel):
     organization_id = Column(
         String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
     )
+    organization = relationship("Organization")
 
 
 class Election(BaseModel):
