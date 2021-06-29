@@ -2,6 +2,47 @@
   "name": "remote-ballot-marking-client",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "lint-staged": {
+    "*.+(css|graphql|json|less|md|mdx|sass|scss|yaml|yml)": [
+      "prettier --write"
+    ],
+    "*.+(js|jsx|ts|tsx)": [
+      "eslint --quiet --fix"
+    ],
+    "*.+(ts|tsx)": [
+      "bash -c tsc"
+    ],
+    "*.css": [
+      "stylelint --config .stylelintrc --fix"
+    ],
+    "package.json": [
+      "sort-package-json"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
   "dependencies": {
     "@types/jest": "^26.0.15",
     "@types/node": "^12.0.0",
@@ -31,49 +72,9 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-react": "^7.24.0",
     "eslint-plugin-react-hooks": "^4.2.0",
+    "lint-staged": "^11.0.0",
     "prettier": "^2.3.2",
-    "stylelint": "^13.13.1"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "lint-staged": {
-    "*.+(css|graphql|json|less|md|mdx|sass|scss|yaml|yml)": [
-      "prettier --write"
-    ],
-    "*.+(js|jsx|ts|tsx)": [
-      "stylelint",
-      "eslint --quiet --fix"
-    ],
-    "*.+(ts|tsx)": [
-      "bash -c tsc"
-    ],
-    "*.css": [
-      "stylelint --config .stylelintrc-css.js --fix"
-    ],
-    "package.json": [
-      "sort-package-json"
-    ]
+    "stylelint": "^13.13.1",
+    "stylelint-config-prettier": "^8.0.2"
   }
 }

@@ -22,7 +22,7 @@ module.exports = {
     'plugin:react/recommended', // Uses the recommended rules from @eslint-plugin-react
     'plugin:jsx-a11y/recommended',
     // 'plugin:cypress/recommended',
-    'plugin:testing-library/react',
+    // 'plugin:testing-library/react',
     'plugin:jest-dom/recommended',
   ],
   globals: {
@@ -49,7 +49,7 @@ module.exports = {
     // 'cypress',
     'jsx-a11y',
     'react-hooks',
-    'testing-library',
+    // 'testing-library',
     'jest-dom',
   ],
   settings: {
@@ -96,7 +96,7 @@ module.exports = {
     'class-methods-use-this': 'off',
     'no-nested-ternary': 'off',
     'new-cap': 'off',
-    'testing-library/prefer-wait-for': 'error',
-    'testing-library/no-wait-for-empty-callback': 'error',
+    // 'testing-library/prefer-wait-for': 'error',
+    // 'testing-library/no-wait-for-empty-callback': 'error',
   },
 }
