@@ -4,7 +4,7 @@ from werkzeug.exceptions import NotFound
 from sqlalchemy import *
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TypeDecorator
-from .database import Base, db_session  # pylint: disable=cyclic-import
+from .database import Base, db_session  # pylint: disable=cyclic-import,unused-import
 
 
 def get_or_404(model: Type[Base], primary_key: str):
@@ -61,15 +61,12 @@ class AdminUser(BaseModel):
 
 class Election(BaseModel):
     id = Column(String(200), primary_key=True)
-    name = Column(String(200), nullable=False)
 
     organization_id = Column(
         String(200), ForeignKey("organization.id", ondelete="cascade"), nullable=False
     )
 
     definition = Column(JSON)
-
-    __table_args__ = (UniqueConstraint("organization_id", "name"),)
 
 
 class Voter(BaseModel):
