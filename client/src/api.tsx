@@ -40,7 +40,7 @@ export interface AdminUser {
 export const useAdminUser = () =>
   useQuery('adminUser', () => apiFetch<AdminUser>('/auth/me'))
 
-export interface Election {
+export interface ElectionBase {
   id: string
   definition: ElectionDefinition
 }
@@ -52,7 +52,7 @@ export interface ElectionDefinition {
 }
 
 export const useElections = () =>
-  useQuery('elections', () => apiFetch<Election[]>('/api/elections'))
+  useQuery('elections', () => apiFetch<ElectionBase[]>('/api/elections'))
 
 export const useCreateElection = () => {
   const createElection = ({ definition }: { definition: File }) => {
@@ -66,5 +66,36 @@ export const useCreateElection = () => {
 
   return useMutation(createElection, {
     onSuccess: () => queryClient.invalidateQueries('elections'),
+  })
+}
+
+export interface Election extends ElectionBase {
+  voters: Voter[]
+}
+
+export interface Voter {
+  voterId: string
+  email: string
+  precinct: string
+  ballotStyle: string
+}
+
+export const useElection = (electionId: string) =>
+  useQuery(['elections', electionId], () =>
+    apiFetch<Election>(`/api/elections/${electionId}`)
+  )
+
+export const useSetVoters = (electionId: string) => {
+  const setVoters = ({ voters }: { voters: File }) => {
+    const body = new FormData()
+    body.append('voters', voters)
+    return apiFetch(`/api/elections/${electionId}/voters`, {
+      method: 'PUT',
+      body,
+    })
+  }
+
+  return useMutation(setVoters, {
+    onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
   })
 }
