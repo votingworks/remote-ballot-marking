@@ -71,7 +71,7 @@ class Election(BaseModel):
 
 class Voter(BaseModel):
     id = Column(String(200), primary_key=True)
-    voter_id = Column(String(200), nullable=False)
+    external_id = Column(String(200), nullable=False)
     email = Column(String(200), nullable=False)
     precinct = Column(String(200), nullable=False)  # Must match Election.definition
     ballot_style = Column(String(200), nullable=False)  # Must match Election.definition
@@ -80,11 +80,11 @@ class Voter(BaseModel):
         String(200), ForeignKey("election.id", ondelete="cascade"), nullable=False
     )
 
-    ballot_url_key = Column(String(200))
+    ballot_url_token = Column(String(200))
     ballot_email_last_sent_at = Column(UTCDateTime)
 
     __table_args__ = (
-        UniqueConstraint("election_id", "voter_id"),
+        UniqueConstraint("election_id", "external_id"),
         UniqueConstraint("election_id", "email"),
-        UniqueConstraint("ballot_url_key"),
+        UniqueConstraint("ballot_url_token"),
     )

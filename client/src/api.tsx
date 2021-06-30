@@ -28,6 +28,11 @@ export const apiFetch = async <T extends unknown>(
   throw new Error(responseText)
 }
 
+export interface Auth {
+  adminUser: AdminUser
+  voter: { id: string }
+}
+
 export interface AdminUser {
   name: string
   email: string
@@ -37,8 +42,7 @@ export interface AdminUser {
   }
 }
 
-export const useAdminUser = () =>
-  useQuery('adminUser', () => apiFetch<AdminUser>('/auth/me'))
+export const useAuth = () => useQuery('auth', () => apiFetch<Auth>('/auth/me'))
 
 export interface ElectionBase {
   id: string
@@ -74,10 +78,12 @@ export interface Election extends ElectionBase {
 }
 
 export interface Voter {
-  voterId: string
+  id: string
+  externalId: string
   email: string
   precinct: string
   ballotStyle: string
+  ballotEmailLastSentAt: string
 }
 
 export const useElection = (electionId: string) =>
@@ -96,6 +102,19 @@ export const useSetVoters = (electionId: string) => {
   }
 
   return useMutation(setVoters, {
+    onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
+  })
+}
+
+export const useSendBallotEmails = (electionId: string) => {
+  const sendBallotEmails = (body: { voterIds: string[]; template: string }) =>
+    apiFetch(`/api/elections/${electionId}/voters/emails`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-type': 'application/json' },
+    })
+
+  return useMutation(sendBallotEmails, {
     onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
   })
 }
