@@ -49,9 +49,9 @@ select:disabled {
 }
 
 /* Foundational */
-html,
-body,
-#root {
+/* html, */
+/* body, */
+#ballotRoot {
   height: 100%;
   overflow: hidden;
   touch-action: none;
@@ -59,7 +59,7 @@ body,
 @media print {
   html,
   body,
-  #root {
+  #ballotRoot {
     height: auto;
     overflow: visible;
   }
