@@ -6,16 +6,30 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'react-toastify'
 import {
   ApiProvider,
-  useAdminUser,
   AdminUser,
   useCreateElection,
   useElections,
   useElection,
+  Election,
   useSetVoters,
+  useSendBallotEmails,
+  useAuth,
 } from './api'
 import BallotUI from './bmd/BallotUI'
+import FlexTable from './FlexTable'
 
-const AdminHome = ({ user }: { user: AdminUser }) => {
+const AdminHeader = ({ adminUser }: { adminUser: AdminUser }) => (
+  <header style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <a href="/" style={{ textDecoration: 'none', color: 'black' }}>
+      Remote Ballot Marking by <strong>Voting</strong>Works
+    </a>
+    <span>
+      {adminUser.email} &bull; <a href="/auth/logout">Log out</a>
+    </span>
+  </header>
+)
+
+const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
   const createElection = useCreateElection()
   const { register, handleSubmit, reset } = useForm<{
     definition: FileList
@@ -37,52 +51,96 @@ const AdminHome = ({ user }: { user: AdminUser }) => {
 
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <a href="/" style={{ textDecoration: 'none', color: 'black' }}>
-          Remote Ballot Marking by <strong>Voting</strong>Works
-        </a>
-        <span>
-          {user.email} &bull; <a href="/auth/logout">Log out</a>
-        </span>
-      </header>
+      <h1>{adminUser.organization.name}</h1>
       <div>
-        <h1>{user.organization.name}</h1>
-        <div>
-          <h2>Add Election</h2>
-          <form onSubmit={handleSubmit(onSubmitCreateElection)}>
-            <div>
-              <label htmlFor="definition">Upload election definition: </label>
-              <input type="file" {...register('definition')} />
-            </div>
-            <div>
-              <input type="submit" />
-            </div>
-          </form>
-        </div>
-        <div>
-          <h2>Elections</h2>
-          {elections.isSuccess &&
-            (elections.data.length === 0 ? (
-              <p>No elections added</p>
-            ) : (
-              <ul>
-                {elections.data.map(({ definition, id }) => (
-                  <li key={id}>
-                    <a href={`/election/${id}`}>
-                      {definition.title} - {definition.county.name} -{' '}
-                      {definition.county.id}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ))}
-        </div>
+        <h2>Add Election</h2>
+        <form onSubmit={handleSubmit(onSubmitCreateElection)}>
+          <div>
+            <label htmlFor="definition">Upload election definition: </label>
+            <input type="file" {...register('definition')} />
+          </div>
+          <div>
+            <input type="submit" />
+          </div>
+        </form>
+      </div>
+      <div>
+        <h2>Elections</h2>
+        {elections.isSuccess &&
+          (elections.data.length === 0 ? (
+            <p>No elections added</p>
+          ) : (
+            <ul>
+              {elections.data.map(({ definition, id }) => (
+                <li key={id}>
+                  <a href={`/election/${id}`}>
+                    {definition.title} - {definition.county.name} -{' '}
+                    {definition.county.id}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ))}
       </div>
     </div>
   )
 }
 
-const Election = () => {
+const SendBallots = ({ election }: { election: Election }) => {
+  const sendBallotEmails = useSendBallotEmails(election.id)
+  const { register, handleSubmit, watch } = useForm<{ template: string }>({
+    defaultValues: {
+      template: 'Click the link below to fill out and print your ballot:',
+    },
+  })
+
+  const onSubmitSendBallotEmails = async ({
+    template,
+  }: {
+    template: string
+  }) => {
+    try {
+      await sendBallotEmails.mutateAsync({
+        voterIds: election.voters.map(voter => voter.id),
+        template,
+      })
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  return (
+    <div>
+      <h2>Send Ballots</h2>
+      <form onSubmit={handleSubmit(onSubmitSendBallotEmails)}>
+        <div>
+          <label>Enter an email template: </label>
+          <textarea
+            {...register('template')}
+            style={{ display: 'block', height: '150px', width: '300px' }}
+          />
+        </div>
+        <div>
+          <p>Email preview: </p>
+          <p
+            style={{
+              border: '1px solid lightgray',
+              height: '150px',
+              width: '300px',
+            }}
+          >
+            {watch('template')}
+            <br />
+            {window.location.host}/voter/1a2b3c4d5e6f7a8b
+          </p>
+        </div>
+        <input type="submit" />
+      </form>
+    </div>
+  )
+}
+
+const ElectionScreen = () => {
   const { electionId } = useParams<{ electionId: string }>()
   const election = useElection(electionId)
   const setVoters = useSetVoters(electionId)
@@ -128,29 +186,35 @@ const Election = () => {
         ) : (
           <div>
             <p>{election.data.voters.length} voters added</p>
-            <table>
+            <FlexTable scrollable height={200}>
               <thead>
                 <tr>
                   <th>Voter ID</th>
                   <th>Email</th>
                   <th>Precinct</th>
                   <th>Ballot Style</th>
+                  <th>Ballot Sent</th>
                 </tr>
               </thead>
               <tbody>
                 {election.data.voters.map(voter => (
-                  <tr key={voter.voterId}>
-                    <td>{voter.voterId}</td>
+                  <tr key={voter.id}>
+                    <td>{voter.externalId}</td>
                     <td>{voter.email}</td>
                     <td>{voter.precinct}</td>
                     <td>{voter.ballotStyle}</td>
+                    <td>
+                      {voter.ballotEmailLastSentAt &&
+                        new Date(voter.ballotEmailLastSentAt).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </FlexTable>
           </div>
         )}
       </div>
+      <SendBallots election={election.data} />
     </div>
   )
 }
@@ -166,24 +230,38 @@ const LoginScreen = () => (
 )
 
 const Routes = () => {
-  const userQuery = useAdminUser()
-  if (userQuery.isLoading || userQuery.isIdle) return null
-  const user = userQuery.isSuccess ? userQuery.data : null
+  const auth = useAuth()
+  if (auth.isLoading || auth.isIdle) return null
+  const { adminUser, voter } = auth.isSuccess
+    ? auth.data
+    : { adminUser: null, voter: null }
 
-  if (user === null) return <LoginScreen />
+  if (adminUser === null && voter === null) return <LoginScreen />
 
   return (
     <BrowserRouter>
+      {adminUser !== null && (
+        <Route>
+          <AdminHeader adminUser={adminUser} />
+        </Route>
+      )}
       <Switch>
-        <Route path="/ballot">
-          <BallotUI />
-        </Route>
-        <Route path="/election/:electionId">
-          <Election />
-        </Route>
-        <Route path="/">
-          <AdminHome user={user} />
-        </Route>
+        {voter !== null && (
+          <Route path="/ballot">
+            <BallotUI />
+          </Route>
+        )}
+        {adminUser !== null && (
+          <Route path="/election/:electionId">
+            <ElectionScreen />
+          </Route>
+        )}
+        {adminUser !== null && (
+          <Route exact path="/">
+            <AdminHome adminUser={adminUser} />
+          </Route>
+        )}
+        <Route>Not found</Route>
       </Switch>
     </BrowserRouter>
   )

@@ -36,27 +36,42 @@ def set_logged_in_admin(user_email: Optional[str]):
     session["admin_user_email"] = user_email
 
 
+def get_logged_in_voter() -> Optional[Voter]:
+    voter_id = session.get("voter_id")
+    return voter_id and Voter.query.get(voter_id)
+
+
+def set_logged_in_voter(voter_id: Optional[str]):
+    session["voter_id"] = voter_id
+
+
 @auth.route("/auth/me")
 def auth_me():
-    user = get_logged_in_admin()
-    if not user:
-        set_logged_in_admin(None)
-        return jsonify(None)
+    admin_user = get_logged_in_admin()
+    voter = get_logged_in_voter()
 
     return jsonify(
-        email=user.email,
-        organization=dict(id=user.organization.id, name=user.organization.name),
+        adminUser=(
+            admin_user
+            and dict(
+                email=admin_user.email,
+                organization=dict(
+                    id=admin_user.organization.id, name=admin_user.organization.name
+                ),
+            )
+        ),
+        voter=(voter and dict(id=voter.id)),
     )
 
 
 @auth.route("/auth/login")
-def login():
+def admin_login():
     redirect_uri = urljoin(request.host_url, "/auth/callback")
     return auth0.authorize_redirect(redirect_uri=redirect_uri)
 
 
 @auth.route("/auth/callback")
-def login_callback():
+def admin_login_callback():
     auth0.authorize_access_token()
     user = auth0.get("userinfo").json()
 
@@ -69,11 +84,18 @@ def login_callback():
 
 
 @auth.route("/auth/logout")
-def logout():
+def admin_logout():
     # Because we have max_age on the oauth requests, we don't need to log out
     # of Auth0.
     set_logged_in_admin(None)
     return redirect("/")
+
+
+@auth.route("/voter/<token>")
+def voter_login(token: str):
+    voter = Voter.query.filter_by(ballot_url_token=token).one_or_none()
+    set_logged_in_voter(voter and voter.id)
+    return redirect("/ballot")
 
 
 @auth.errorhandler(OAuthError)

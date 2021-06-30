@@ -23,14 +23,14 @@ import FocusManager from './components/FocusManager'
 import { getContests } from './utils/election'
 
 const BallotUI = () => {
-    const [votes, setVotes] = useState({})
-    const screenReader = new AriaScreenReader(
-        new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
-      )
+  const [votes, setVotes] = useState({})
+  const screenReader = new AriaScreenReader(
+    new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
+  )
 
-    const printer = getPrinter()
-    screenReader.mute()
-      
+  const printer = getPrinter()
+  screenReader.mute()
+
   /* istanbul ignore next - need to figure out how to test this */
   const onKeyPress = useCallback(
     (event: React.KeyboardEvent) => {
@@ -87,52 +87,54 @@ const BallotUI = () => {
   const precinctId = ballotStyle.precincts[0]
 
   return (
-    <BrowserRouter basename="/ballot">
-      <FocusManager
-        screenReader={screenReader}
-        onKeyPress={onKeyPress}
-        onClickCapture={onClick}
-        onFocusCapture={onFocus}
-      >
-        <Route
-          path="/"
-          render={() => (
-            <BallotContext.Provider
-              value={{
-                activateBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                markVoterCardPrinted: async () => {
-                  return true
-                },
-                markVoterCardVoided: async () => {
-                  return true
-                },
-                resetBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                setUserSettings: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                updateTally: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                updateVote: (contestId, vote) => {
-                  setVotes({ ...votes, [contestId]: vote })
-                }, // eslint-disable-line @typescript-eslint/no-empty-function
-                forceSaveVote: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                userSettings: { textSize: 0 },
-                votes,
-                machineConfig: { machineId: 'foobar', appMode: VxMarkOnly },
-                ballotStyleId,
-                contests: getContests({
-                  ballotStyle,
+    <div id="ballotRoot">
+      <BrowserRouter basename="/ballot">
+        <FocusManager
+          screenReader={screenReader}
+          onKeyPress={onKeyPress}
+          onClickCapture={onClick}
+          onFocusCapture={onFocus}
+        >
+          <Route
+            path="/"
+            render={() => (
+              <BallotContext.Provider
+                value={{
+                  activateBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  markVoterCardPrinted: async () => {
+                    return true
+                  },
+                  markVoterCardVoided: async () => {
+                    return true
+                  },
+                  resetBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  setUserSettings: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  updateTally: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  updateVote: (contestId, vote) => {
+                    setVotes({ ...votes, [contestId]: vote })
+                  }, // eslint-disable-line @typescript-eslint/no-empty-function
+                  forceSaveVote: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  userSettings: { textSize: 0 },
+                  votes,
+                  machineConfig: { machineId: 'foobar', appMode: VxMarkOnly },
+                  ballotStyleId,
+                  contests: getContests({
+                    ballotStyle,
+                    election: electionSample,
+                  }),
                   election: electionSample,
-                }),
-                election: electionSample,
-                isLiveMode: true,
-                precinctId,
-                printer: printer,
-              }}
-            >
-              <Ballot />
-            </BallotContext.Provider>
-          )}
-        />
-      </FocusManager>
-    </BrowserRouter>
+                  isLiveMode: true,
+                  precinctId,
+                  printer: printer,
+                }}
+              >
+                <Ballot />
+              </BallotContext.Provider>
+            )}
+          />
+        </FocusManager>
+      </BrowserRouter>
+    </div>
   )
 }
 

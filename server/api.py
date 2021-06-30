@@ -1,8 +1,13 @@
 import uuid
 import json
+import secrets
+from datetime import datetime
+from typing import Optional
+from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 from flask import Blueprint, request, jsonify
 
+from .config import HTTP_ORIGIN
 from .models import *
 from .auth import get_logged_in_admin
 
@@ -43,17 +48,19 @@ def list_elections():
 def get_election(election_id: str):
     election = get_or_404(Election, election_id)
     voters = (
-        Voter.query.filter_by(election_id=election_id).order_by(Voter.voter_id).all()
+        Voter.query.filter_by(election_id=election_id).order_by(Voter.external_id).all()
     )
     return jsonify(
         id=election.id,
         definition=election.definition,
         voters=[
             dict(
-                voterId=voter.voter_id,
+                id=voter.id,
+                externalId=voter.external_id,
                 email=voter.email,
                 precinct=voter.precinct,
                 ballotStyle=voter.ballot_style,
+                ballotEmailLastSentAt=isoformat(voter.ballot_email_last_sent_at),
             )
             for voter in voters
         ],
@@ -68,7 +75,7 @@ def set_election_voters(election_id: str):
     voters = [
         Voter(
             id=str(uuid.uuid4()),
-            voter_id=voter.find(".//{*}VoterIdentification").attrib["Id"],
+            external_id=voter.find(".//{*}VoterIdentification").attrib["Id"],
             email=voter.find(".//{*}AddressLine[@type='email']").text,
             precinct="TODO",
             ballot_style="TODO",
@@ -102,3 +109,33 @@ def set_election_voters(election_id: str):
     db_session.commit()
 
     return jsonify(status="ok")
+
+
+@api.route("/elections/<election_id>/voters/emails", methods=["POST"])
+def send_voter_ballot_emails(election_id: str):
+    email_request = request.get_json()
+    voters = (
+        Voter.query.filter_by(election_id=election_id)
+        .filter(Voter.id.in_(email_request["voterIds"]))
+        .all()
+    )
+    assert len(voters) == len(email_request["voterIds"])
+    for voter in voters:
+        voter.ballot_url_token = secrets.token_hex(16)
+        send_ballot_email(
+            voter.email, email_request["template"], voter.ballot_url_token
+        )
+        voter.ballot_email_last_sent_at = datetime.now(timezone.utc)
+
+    db_session.commit()
+
+    return jsonify(status="ok")
+
+
+def send_ballot_email(voter_email: str, template: str, ballot_url_token: str):
+    ballot_url = urljoin(HTTP_ORIGIN, f"/voter/{ballot_url_token}")
+    print("SEND EMAIL", voter_email, template, ballot_url)
+
+
+def isoformat(date: Optional[datetime]):
+    return date and date.isoformat()
