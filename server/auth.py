@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib.parse import urljoin, urlencode
 from flask import Blueprint, request, session, jsonify
 from authlib.integrations.flask_client import OAuth, OAuthError
@@ -26,14 +27,20 @@ auth0 = oauth.register(
 )
 
 
+def get_logged_in_admin() -> Optional[AdminUser]:
+    email = session.get("admin_user_email")
+    return email and AdminUser.query.filter_by(email=email).one_or_none()
+
+
+def set_logged_in_admin(user_email: Optional[str]):
+    session["admin_user_email"] = user_email
+
+
 @auth.route("/auth/me")
 def auth_me():
-    if not session.get("admin_user_email"):
-        return jsonify(None)
-
-    user = AdminUser.query.filter_by(email=session["admin_user_email"]).one_or_none()
+    user = get_logged_in_admin()
     if not user:
-        session["admin_user_email"] = None
+        set_logged_in_admin(None)
         return jsonify(None)
 
     return jsonify(
@@ -53,13 +60,10 @@ def login_callback():
     auth0.authorize_access_token()
     user = auth0.get("userinfo").json()
 
-    print(user)
     if user and user["email"]:
         db_user = AdminUser.query.filter_by(email=user["email"]).one_or_none()
-        print(db_user)
         if db_user:
-            print(db_user.email)
-            session["admin_user_email"] = db_user.email
+            set_logged_in_admin(db_user.email)
 
     return redirect("/")
 
@@ -68,7 +72,7 @@ def login_callback():
 def logout():
     # Because we have max_age on the oauth requests, we don't need to log out
     # of Auth0.
-    session["admin_user_email"] = None
+    set_logged_in_admin(None)
     return redirect("/")
 
 

@@ -16,10 +16,7 @@ from .config import (
 )
 from .database import init_db, db_session, engine
 from .auth import auth, oauth
-
-# from .api import api
-# from .auth import auth
-# from .auth.routes import oauth
+from .api import api
 
 if FLASK_ENV not in DEVELOPMENT_ENVS:
     # Restrict which hosts we trust when not in dev/test. This works by causing
@@ -48,7 +45,7 @@ init_db()
 
 oauth.init_app(app)
 
-# app.register_blueprint(api, url_prefix="/api")
+app.register_blueprint(api, url_prefix="/api")
 app.register_blueprint(auth)
 
 # pylint: disable=wrong-import-position,cyclic-import,unused-import
