@@ -38,7 +38,8 @@ TEST_DATABASE_URL = "postgresql://rbm:rbm@localhost:5432/rbmtest"
 def read_database_url_config() -> str:
     environment_database_url = os.environ.get("DATABASE_URL", None)
     if environment_database_url:
-        return environment_database_url
+        # SQLAlchemy doesn't support `postgres`, but Heroku only produces database URLs with that scheme
+        return environment_database_url.replace("postgres://", "postgresql://")
 
     if FLASK_ENV == "development":
         return DEVELOPMENT_DATABASE_URL
