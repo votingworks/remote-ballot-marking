@@ -30,7 +30,7 @@ export const apiFetch = async <T extends unknown>(
 
 export interface Auth {
   adminUser: AdminUser
-  voter: { id: string }
+  voter: VoterUser
 }
 
 export interface AdminUser {
@@ -40,6 +40,13 @@ export interface AdminUser {
     id: string
     name: string
   }
+}
+
+export interface VoterUser {
+  id: string
+  election: ElectionBase
+  ballotStyle: string
+  precinct: string
 }
 
 export const useAuth = () => useQuery('auth', () => apiFetch<Auth>('/auth/me'))

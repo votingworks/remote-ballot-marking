@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 from urllib.parse import urljoin, urlencode
 from flask import Blueprint, request, session, jsonify
 from authlib.integrations.flask_client import OAuth, OAuthError
@@ -29,7 +29,9 @@ auth0 = oauth.register(
 
 def get_logged_in_admin() -> Optional[AdminUser]:
     email = session.get("admin_user_email")
-    return email and AdminUser.query.filter_by(email=email).one_or_none()
+    return email and cast(
+        Optional[AdminUser], AdminUser.query.filter_by(email=email).one_or_none()
+    )
 
 
 def set_logged_in_admin(user_email: Optional[str]):
@@ -38,7 +40,7 @@ def set_logged_in_admin(user_email: Optional[str]):
 
 def get_logged_in_voter() -> Optional[Voter]:
     voter_id = session.get("voter_id")
-    return voter_id and Voter.query.get(voter_id)
+    return voter_id and cast(Optional[Voter], Voter.query.get(voter_id))
 
 
 def set_logged_in_voter(voter_id: Optional[str]):
@@ -60,7 +62,17 @@ def auth_me():
                 ),
             )
         ),
-        voter=(voter and dict(id=voter.id)),
+        voter=(
+            voter
+            and dict(
+                id=voter.id,
+                election=dict(
+                    id=voter.election_id, definition=voter.election.definition,
+                ),
+                ballotStyle=voter.ballot_style,
+                precinct=voter.precinct,
+            )
+        ),
     )
 
 

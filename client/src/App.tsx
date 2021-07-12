@@ -3,7 +3,8 @@
 import React from 'react'
 import { BrowserRouter, Route, Switch, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { toast } from 'react-toastify'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import {
   ApiProvider,
   AdminUser,
@@ -15,8 +16,8 @@ import {
   useSendBallotEmails,
   useAuth,
 } from './api'
-import BallotUI from './bmd/BallotUI'
 import FlexTable from './FlexTable'
+import VoterBallot from './VoterBallot'
 
 const AdminHeader = ({ adminUser }: { adminUser: AdminUser }) => (
   <header style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -248,7 +249,7 @@ const Routes = () => {
       <Switch>
         {voter !== null && (
           <Route path="/ballot">
-            <BallotUI />
+            <VoterBallot voter={voter} />
           </Route>
         )}
         {adminUser !== null && (
@@ -270,6 +271,7 @@ const Routes = () => {
 const App: React.FC = () => (
   <ApiProvider>
     <Routes />
+    <ToastContainer />
   </ApiProvider>
 )
 

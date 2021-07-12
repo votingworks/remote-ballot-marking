@@ -71,17 +71,16 @@ def get_election(election_id: str):
 def set_election_voters(election_id: str):
     voters = request.files["voters"]
 
-    tree = ET.parse(voters)
     voters = [
         Voter(
             id=str(uuid.uuid4()),
-            external_id=voter.find(".//{*}VoterIdentification").attrib["Id"],
-            email=voter.find(".//{*}AddressLine[@type='email']").text,
-            precinct="TODO",
-            ballot_style="TODO",
+            external_id=voter.find(".//{*}VoterIdentification").attrib["Id"],  # type: ignore
+            email=voter.find(".//{*}AddressLine[@type='email']").text,  # type: ignore
+            precinct=voter.find(".//{*}BallotFormIdentifier").text,  # type: ignore
+            ballot_style=voter.find(".//{*}PollingPlace").attrib["IdNumber"],  # type: ignore
             election_id=election_id,
         )
-        for voter in tree.getroot().findall(".//{*}Voter")
+        for voter in ET.parse(voters).getroot().findall(".//{*}VoterDetails")
     ]
 
     # Remove duplicates
