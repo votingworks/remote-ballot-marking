@@ -1,4 +1,11 @@
-import React, { useCallback, useContext, useEffect, useRef } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { setConstantValue } from 'typescript'
 import Loading from '../components/Loading'
 import Main, { MainChild } from '../components/Main'
 import PrintedBallot from '../components/PrintedBallot'
@@ -17,44 +24,39 @@ const PrintPage = () => {
     markVoterCardPrinted,
     precinctId,
     printer,
-    resetBallot,
-    updateTally,
     votes,
   } = useContext(BallotContext)
-  const printerTimer = useRef(0)
+
+  const [hasPrinted, setHasPrinted] = useState(false)
 
   const printBallot = useCallback(async () => {
-    const isUsed = await markVoterCardPrinted()
-    /* istanbul ignore else */
-    if (isUsed) {
-      await printer.print()
-      updateTally()
-      printerTimer.current = window.setTimeout(() => {
-        resetBallot()
-      }, printerMessageTimeoutSeconds * 1000)
-    }
-  }, [markVoterCardPrinted, printer, resetBallot, updateTally])
+    await printer.print()
+    setHasPrinted(true)
+  }, [printer])
 
   useEffect(() => {
-    if (!isEmptyObject(votes)) {
+    if (!hasPrinted) {
       printBallot()
     }
   }, [votes, printBallot])
-
-  useEffect(() => {
-    return () => clearTimeout(printerTimer.current)
-  }, [])
 
   return (
     <React.Fragment>
       <Screen>
         <Main>
           <MainChild centerVertical maxWidth={false}>
-            <Prose textCenter id="audiofocus">
-              <h1 aria-label="Printing Official Ballot.">
-                <Loading>Printing Official Ballot</Loading>
-              </h1>
-            </Prose>
+            {!hasPrinted ? (
+              <Prose textCenter id="audiofocus">
+                <h1 aria-label="Printing Official Ballot.">
+                  <Loading>Printing Official Ballot</Loading>
+                </h1>
+              </Prose>
+            ) : (
+              <div>
+                <button onClick={() => printBallot()}>Print Again</button>
+                <button onClick={() => markVoterCardPrinted()}>Finish</button>
+              </div>
+            )}
           </MainChild>
         </Main>
       </Screen>

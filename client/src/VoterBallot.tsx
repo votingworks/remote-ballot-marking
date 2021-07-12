@@ -5,7 +5,7 @@ import { Election } from '@votingworks/ballot-encoder'
 import Ballot from './bmd/components/Ballot'
 import BallotContext from './bmd/contexts/ballotContext'
 
-import { VxMarkOnly } from './bmd/config/types'
+import { VxMarkPlusVxPrint } from './bmd/config/types'
 
 import 'normalize.css'
 import './bmd/BallotUI.css'
@@ -26,6 +26,8 @@ import { VoterUser } from './api'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 const VoterBallot = ({ voter }: { voter: VoterUser }) => {
   const [votes, setVotes] = useState({})
+  const [hasPrinted, setHasPrinted] = useState(false)
+
   const screenReader = new AriaScreenReader(
     new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
   )
@@ -101,37 +103,48 @@ const VoterBallot = ({ voter }: { voter: VoterUser }) => {
         >
           <Route
             path="/"
-            render={() => (
-              <BallotContext.Provider
-                value={{
-                  activateBallot: () => {},
-                  markVoterCardPrinted: async () => {
-                    return true
-                  },
-                  markVoterCardVoided: async () => {
-                    return true
-                  },
-                  resetBallot: () => {},
-                  setUserSettings: () => {},
-                  updateTally: () => {},
-                  updateVote: (contestId, vote) => {
-                    setVotes({ ...votes, [contestId]: vote })
-                  },
-                  forceSaveVote: () => {},
-                  userSettings: { textSize: 0 },
-                  votes,
-                  machineConfig: { machineId: 'foobar', appMode: VxMarkOnly },
-                  ballotStyleId: voter.ballotStyle,
-                  contests: getContests({ ballotStyle, election }),
-                  election,
-                  isLiveMode: true,
-                  precinctId: voter.precinct,
-                  printer,
-                }}
-              >
-                <Ballot />
-              </BallotContext.Provider>
-            )}
+            render={() =>
+              hasPrinted ? (
+                <div>
+                  Voting and printing complete. Thanks for using VotingWorks
+                  Remote Ballot Marking!
+                </div>
+              ) : (
+                <BallotContext.Provider
+                  value={{
+                    activateBallot: () => {},
+                    markVoterCardPrinted: async () => {
+                      setHasPrinted(true)
+                      return true
+                    },
+                    markVoterCardVoided: async () => {
+                      return true
+                    },
+                    resetBallot: () => {},
+                    setUserSettings: () => {},
+                    updateTally: () => {},
+                    updateVote: (contestId, vote) => {
+                      setVotes({ ...votes, [contestId]: vote })
+                    },
+                    forceSaveVote: () => {},
+                    userSettings: { textSize: 0 },
+                    votes,
+                    machineConfig: {
+                      machineId: 'rbm',
+                      appMode: VxMarkPlusVxPrint,
+                    },
+                    ballotStyleId: voter.ballotStyle,
+                    contests: getContests({ ballotStyle, election }),
+                    election,
+                    isLiveMode: true,
+                    precinctId: voter.precinct,
+                    printer,
+                  }}
+                >
+                  <Ballot />
+                </BallotContext.Provider>
+              )
+            }
           />
         </FocusManager>
       </BrowserRouter>
