@@ -67,6 +67,14 @@ def get_election(election_id: str):
     )
 
 
+@api.route("/elections/<election_id>", methods=["DELETE"])
+def delete_election(election_id: str):
+    election = get_or_404(Election, election_id)
+    db_session.delete(election)
+    db_session.commit()
+    return jsonify(status="ok")
+
+
 @api.route("/elections/<election_id>/voters", methods=["PUT"])
 def set_election_voters(election_id: str):
     voters = request.files["voters"]

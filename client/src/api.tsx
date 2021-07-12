@@ -80,6 +80,16 @@ export const useCreateElection = () => {
   })
 }
 
+export const useDeleteElection = () => {
+  const deleteElection = ({ electionId }: { electionId: string }) => {
+    return apiFetch(`/api/elections/${electionId}`, { method: 'DELETE' })
+  }
+
+  return useMutation(deleteElection, {
+    onSuccess: () => queryClient.invalidateQueries('elections'),
+  })
+}
+
 export interface Election extends ElectionBase {
   voters: Voter[]
 }

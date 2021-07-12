@@ -15,6 +15,7 @@ import {
   useSetVoters,
   useSendBallotEmails,
   useAuth,
+  useDeleteElection,
 } from './api'
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
@@ -36,6 +37,7 @@ const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
     definition: FileList
   }>()
   const elections = useElections()
+  const deleteElection = useDeleteElection()
 
   const onSubmitCreateElection = async ({
     definition,
@@ -45,6 +47,14 @@ const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
     try {
       await createElection.mutateAsync({ definition: definition[0] })
       reset()
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  const onClickDeleteElection = async (electionId: string) => {
+    try {
+      await deleteElection.mutateAsync({ electionId })
     } catch (error) {
       toast.error(error.message)
     }
@@ -78,6 +88,12 @@ const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
                     {definition.title} - {definition.county.name} -{' '}
                     {definition.county.id}
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => onClickDeleteElection(id)}
+                  >
+                    &#10005;
+                  </button>
                 </li>
               ))}
             </ul>
