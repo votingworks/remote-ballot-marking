@@ -1,7 +1,15 @@
 from typing import Type
 from datetime import datetime as dt, timezone
 from werkzeug.exceptions import NotFound
-from sqlalchemy import *
+
+from sqlalchemy import (
+    DateTime,
+    String,
+    Column,
+    ForeignKey,
+    JSON,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TypeDecorator
 from .database import Base, db_session  # pylint: disable=cyclic-import,unused-import
@@ -79,6 +87,7 @@ class Voter(BaseModel):
     election_id = Column(
         String(200), ForeignKey("election.id", ondelete="cascade"), nullable=False
     )
+    election = relationship("Election")
 
     ballot_url_token = Column(String(200))
     ballot_email_last_sent_at = Column(UTCDateTime)

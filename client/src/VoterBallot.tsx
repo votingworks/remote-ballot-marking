@@ -1,28 +1,30 @@
 import React, { useCallback, useState } from 'react'
 import { BrowserRouter, Route } from 'react-router-dom'
 
-import { electionSample } from '@votingworks/ballot-encoder'
-import Ballot from './components/Ballot'
-import BallotContext from './contexts/ballotContext'
+import { Election } from '@votingworks/ballot-encoder'
+import Ballot from './bmd/components/Ballot'
+import BallotContext from './bmd/contexts/ballotContext'
 
-import { VxMarkOnly } from './config/types'
+import { VxMarkOnly } from './bmd/config/types'
 
 import 'normalize.css'
-import './BallotUI.css'
+import './bmd/BallotUI.css'
 
-import memoize from './utils/memoize'
+import memoize from './bmd/utils/memoize'
 import {
   AriaScreenReader,
   SpeechSynthesisTextToSpeech,
-} from './utils/ScreenReader'
+} from './bmd/utils/ScreenReader'
 
-import { getUSEnglishVoice } from './utils/voices'
-import getPrinter, { Printer } from './utils/printer'
+import { getUSEnglishVoice } from './bmd/utils/voices'
+import getPrinter from './bmd/utils/printer'
 
-import FocusManager from './components/FocusManager'
-import { getContests } from './utils/election'
+import FocusManager from './bmd/components/FocusManager'
+import { getBallotStyle, getContests } from './bmd/utils/election'
+import { VoterUser } from './api'
 
-const BallotUI = () => {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+const VoterBallot = ({ voter }: { voter: VoterUser }) => {
   const [votes, setVotes] = useState({})
   const screenReader = new AriaScreenReader(
     new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
@@ -82,9 +84,11 @@ const BallotUI = () => {
     [screenReader]
   )
 
-  const ballotStyle = electionSample.ballotStyles[0]
-  const ballotStyleId = ballotStyle.id
-  const precinctId = ballotStyle.precincts[0]
+  const election = voter.election.definition as Election
+  const ballotStyle = getBallotStyle({
+    election,
+    ballotStyleId: voter.ballotStyle,
+  })
 
   return (
     <div id="ballotRoot">
@@ -100,32 +104,29 @@ const BallotUI = () => {
             render={() => (
               <BallotContext.Provider
                 value={{
-                  activateBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  activateBallot: () => {},
                   markVoterCardPrinted: async () => {
                     return true
                   },
                   markVoterCardVoided: async () => {
                     return true
                   },
-                  resetBallot: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                  setUserSettings: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-                  updateTally: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  resetBallot: () => {},
+                  setUserSettings: () => {},
+                  updateTally: () => {},
                   updateVote: (contestId, vote) => {
                     setVotes({ ...votes, [contestId]: vote })
-                  }, // eslint-disable-line @typescript-eslint/no-empty-function
-                  forceSaveVote: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+                  },
+                  forceSaveVote: () => {},
                   userSettings: { textSize: 0 },
                   votes,
                   machineConfig: { machineId: 'foobar', appMode: VxMarkOnly },
-                  ballotStyleId,
-                  contests: getContests({
-                    ballotStyle,
-                    election: electionSample,
-                  }),
-                  election: electionSample,
+                  ballotStyleId: voter.ballotStyle,
+                  contests: getContests({ ballotStyle, election }),
+                  election,
                   isLiveMode: true,
-                  precinctId,
-                  printer: printer,
+                  precinctId: voter.precinct,
+                  printer,
                 }}
               >
                 <Ballot />
@@ -138,4 +139,4 @@ const BallotUI = () => {
   )
 }
 
-export default BallotUI
+export default VoterBallot
