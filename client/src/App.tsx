@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Switch, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import styled from 'styled-components'
 import {
   ApiProvider,
   AdminUser,
@@ -20,15 +21,23 @@ import {
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
 
+const Header = styled.header`
+  display: flex;
+  justify-content: space-between;
+  @media print {
+    display: none;
+  }
+`
+
 const AdminHeader = ({ adminUser }: { adminUser: AdminUser }) => (
-  <header style={{ display: 'flex', justifyContent: 'space-between' }}>
+  <Header>
     <a href="/" style={{ textDecoration: 'none', color: 'black' }}>
       Remote Ballot Marking by <strong>Voting</strong>Works
     </a>
     <span>
       {adminUser.email} &bull; <a href="/auth/logout">Log out</a>
     </span>
-  </header>
+  </Header>
 )
 
 const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
