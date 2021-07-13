@@ -2,7 +2,7 @@ import uuid
 import json
 import secrets
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 import requests
@@ -78,7 +78,7 @@ def delete_election(election_id: str):
 
 @api.route("/elections/<election_id>/voters", methods=["PUT"])
 def set_election_voters(election_id: str):
-    voters = request.files["voters"]
+    voter_file = request.files["voters"]
 
     voters = [
         Voter(
@@ -89,7 +89,7 @@ def set_election_voters(election_id: str):
             ballot_style=voter.find(".//{*}PollingPlace").attrib["IdNumber"],  # type: ignore
             election_id=election_id,
         )
-        for voter in ET.parse(voters).getroot().findall(".//{*}VoterDetails")
+        for voter in ET.parse(voter_file).getroot().findall(".//{*}VoterDetails")  # type: ignore
     ]
 
     # Remove duplicates
@@ -121,7 +121,7 @@ def set_election_voters(election_id: str):
 
 @api.route("/elections/<election_id>/voters/emails", methods=["POST"])
 def send_voter_ballot_emails(election_id: str):
-    email_request = request.get_json()
+    email_request = cast(dict, request.get_json())
     voters = (
         Voter.query.filter_by(election_id=election_id)
         .filter(Voter.id.in_(email_request["voterIds"]))

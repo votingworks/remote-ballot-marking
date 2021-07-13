@@ -93,7 +93,7 @@ const VoterBallot = ({ voter }: { voter: VoterUser }) => {
   })
 
   return (
-    <div id="ballotRoot">
+    <div id="ballot-root">
       <BrowserRouter basename="/ballot">
         <FocusManager
           screenReader={screenReader}

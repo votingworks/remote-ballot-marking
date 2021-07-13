@@ -44,6 +44,7 @@ export interface AdminUser {
 
 export interface VoterUser {
   id: string
+  email: string
   election: ElectionBase
   ballotStyle: string
   precinct: string

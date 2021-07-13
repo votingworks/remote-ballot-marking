@@ -66,6 +66,7 @@ def auth_me():
             voter
             and dict(
                 id=voter.id,
+                email=voter.email,
                 election=dict(
                     id=voter.election_id, definition=voter.election.definition,
                 ),
@@ -108,6 +109,12 @@ def voter_login(token: str):
     voter = Voter.query.filter_by(ballot_url_token=token).one_or_none()
     set_logged_in_voter(voter and voter.id)
     return redirect("/ballot")
+
+
+@auth.route("/voter/logout")
+def voter_logout():
+    set_logged_in_voter(None)
+    return redirect("/" if get_logged_in_admin() else "/ballot")
 
 
 @auth.errorhandler(OAuthError)

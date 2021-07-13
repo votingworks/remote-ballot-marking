@@ -1,7 +1,13 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
-import { BrowserRouter, Route, Switch, useParams } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Redirect,
+  Route,
+  Switch,
+  useParams,
+} from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -17,6 +23,7 @@ import {
   useSendBallotEmails,
   useAuth,
   useDeleteElection,
+  VoterUser,
 } from './api'
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
@@ -245,6 +252,17 @@ const ElectionScreen = () => {
   )
 }
 
+const VoterHeader = ({ voter }: { voter: VoterUser }) => (
+  <Header>
+    <a href="/ballot" style={{ textDecoration: 'none', color: 'black' }}>
+      Remote Ballot Marking by <strong>Voting</strong>Works
+    </a>
+    <span>
+      {voter.email} &bull; <a href="/voter/logout">Log out</a>
+    </span>
+  </Header>
+)
+
 const LoginScreen = () => (
   <div>
     <h1>Remote Ballot Marking</h1>
@@ -262,31 +280,46 @@ const Routes = () => {
     ? auth.data
     : { adminUser: null, voter: null }
 
-  if (adminUser === null && voter === null) return <LoginScreen />
+  if (adminUser === null && voter === null) {
+    return (
+      <BrowserRouter>
+        <Switch>
+          <Route exact path="/">
+            <LoginScreen />
+          </Route>
+          <Route exact path="/ballot">
+            Thank you for using VotingWorks Remote Ballot Marking.
+          </Route>
+          <Redirect to="/" />
+        </Switch>
+      </BrowserRouter>
+    )
+  }
 
-  return (
-    <BrowserRouter>
-      {adminUser !== null && (
-        <Route>
-          <AdminHeader adminUser={adminUser} />
-        </Route>
-      )}
-      <Switch>
-        {voter !== null && (
+  if (voter !== null) {
+    return (
+      <BrowserRouter>
+        <VoterHeader voter={voter} />
+        <Switch>
           <Route path="/ballot">
             <VoterBallot voter={voter} />
           </Route>
-        )}
-        {adminUser !== null && (
-          <Route path="/election/:electionId">
-            <ElectionScreen />
-          </Route>
-        )}
-        {adminUser !== null && (
-          <Route exact path="/">
-            <AdminHome adminUser={adminUser} />
-          </Route>
-        )}
+          <Redirect to="/ballot" />
+        </Switch>
+      </BrowserRouter>
+    )
+  }
+
+  return (
+    <BrowserRouter>
+      <AdminHeader adminUser={adminUser!} />
+      <Switch>
+        <Route path="/election/:electionId">
+          <ElectionScreen />
+        </Route>
+        <Route exact path="/">
+          <AdminHome adminUser={adminUser!} />
+        </Route>
         <Route>Not found</Route>
       </Switch>
     </BrowserRouter>

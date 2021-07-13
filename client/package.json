@@ -19,7 +19,7 @@
       "bash -c tsc"
     ],
     "*.css": [
-      "stylelint --config .stylelintrc --fix"
+      "stylelint --config .stylelintrc-css.js --fix"
     ],
     "package.json": [
       "sort-package-json"

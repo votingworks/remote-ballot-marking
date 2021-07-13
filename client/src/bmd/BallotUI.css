@@ -4,6 +4,7 @@
 /* Reset */
 html {
   box-sizing: border-box;
+  height: 100%;
   line-height: 1;
   user-select: none;
 }
@@ -14,6 +15,7 @@ html {
 }
 
 body {
+  height: 100%;
   margin: 0;
 }
 
@@ -22,8 +24,8 @@ table {
 }
 
 fieldset {
-  margin: 0;
   border: none;
+  margin: 0;
   padding: 0;
 }
 
@@ -49,17 +51,24 @@ select:disabled {
 }
 
 /* Foundational */
+
 /* html, */
+
 /* body, */
-#ballotRoot {
+#root {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+}
+#ballot-root {
+  flex-grow: 1;
   overflow: hidden;
   touch-action: none;
 }
 @media print {
   html,
   body,
-  #ballotRoot {
+  #ballot-root {
     height: auto;
     overflow: visible;
   }
@@ -87,12 +96,12 @@ html {
 
 /* Accessibility Utilities */
 .screen-reader-only {
-  position: absolute !important; /* stylelint-disable-line declaration-no-important */
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
   clip: rect(1px, 1px, 1px, 1px);
   clip-path: polygon(0 0, 0 0, 0 0);
+  height: 1px;
+  overflow: hidden;
+  position: absolute !important; /* stylelint-disable-line declaration-no-important */
+  width: 1px;
 }
 
 /* Utilities */
