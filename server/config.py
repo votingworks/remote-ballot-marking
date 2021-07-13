@@ -116,6 +116,8 @@ def read_admin_auth0_creds() -> Tuple[str, str, str]:
     ADMIN_AUTH0_CLIENT_SECRET,
 ) = read_admin_auth0_creds()
 
+MAILGUN_DOMAIN = os.environ.get("MAILGUN_DOMAIN", "")
+MAILGUN_API_KEY = os.environ.get("MAILGUN_API_KEY", "")
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
