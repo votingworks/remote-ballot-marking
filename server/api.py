@@ -5,9 +5,10 @@ from datetime import datetime
 from typing import Optional
 from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
+import requests
 from flask import Blueprint, request, jsonify
 
-from .config import HTTP_ORIGIN
+from .config import HTTP_ORIGIN, MAILGUN_API_KEY, MAILGUN_DOMAIN
 from .models import *
 from .auth import get_logged_in_admin
 
@@ -141,7 +142,22 @@ def send_voter_ballot_emails(election_id: str):
 
 def send_ballot_email(voter_email: str, template: str, ballot_url_token: str):
     ballot_url = urljoin(HTTP_ORIGIN, f"/voter/{ballot_url_token}")
+
     print("SEND EMAIL", voter_email, template, ballot_url)
+    if not (MAILGUN_DOMAIN and MAILGUN_API_KEY):
+        raise Exception(
+            "Must configure MAILGUN_DOMAIN and MAILGUN_API_KEY to send emails"
+        )
+    return requests.post(
+        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+        auth=("api", MAILGUN_API_KEY),
+        data={
+            "from": "VotingWorks Support <rbm@vx.support>",
+            "to": [voter_email],
+            "subject": "Your Official Ballot",
+            "text": f"{template}\n{ballot_url}",
+        },
+    )
 
 
 def isoformat(date: Optional[datetime]):
