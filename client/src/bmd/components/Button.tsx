@@ -44,7 +44,7 @@ export const DecoyButton = styled.div`
   ${buttonStyles}/* stylelint-disable-line value-keyword-case */
 `
 
-const StyledButton = styled('button').attrs(({ type = 'button' }) => ({
+export const StyledButton = styled('button').attrs(({ type = 'button' }) => ({
   type,
 }))`
   ${buttonStyles}/* stylelint-disable-line value-keyword-case */

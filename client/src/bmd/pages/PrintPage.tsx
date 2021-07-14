@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react'
 import { setConstantValue } from 'typescript'
+import Button from '../components/Button'
 import Loading from '../components/Loading'
 import Main, { MainChild } from '../components/Main'
 import PrintedBallot from '../components/PrintedBallot'
@@ -45,17 +46,20 @@ const PrintPage = () => {
       <Screen>
         <Main>
           <MainChild centerVertical maxWidth={false}>
-            {!hasPrinted ? (
-              <Prose textCenter id="audiofocus">
-                <h1 aria-label="Printing Official Ballot.">
-                  <Loading>Printing Official Ballot</Loading>
-                </h1>
+            {hasPrinted && (
+              <Prose textCenter>
+                <p>
+                  <h1>Did you successfully print your ballot?</h1>
+                </p>
+                <Button onPress={() => printBallot()}>No - Print again</Button>
+                <Button
+                  primary
+                  onPress={() => markVoterCardPrinted()}
+                  style={{ marginLeft: '30px' }}
+                >
+                  Yes - Continue
+                </Button>
               </Prose>
-            ) : (
-              <div>
-                <button onClick={() => printBallot()}>Print Again</button>
-                <button onClick={() => markVoterCardPrinted()}>Finish</button>
-              </div>
             )}
           </MainChild>
         </Main>

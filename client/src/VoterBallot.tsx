@@ -4,6 +4,8 @@ import { BrowserRouter, Route } from 'react-router-dom'
 import { Election } from '@votingworks/ballot-encoder'
 import Ballot from './bmd/components/Ballot'
 import BallotContext from './bmd/contexts/ballotContext'
+import Screen from './bmd/components/Screen'
+import Prose from './bmd/components/Prose'
 
 import { VxMarkPlusVxPrint } from './bmd/config/types'
 
@@ -105,10 +107,17 @@ const VoterBallot = ({ voter }: { voter: VoterUser }) => {
             path="/"
             render={() =>
               hasPrinted ? (
-                <div>
-                  Voting and printing complete. Thanks for using VotingWorks
-                  Remote Ballot Marking!
-                </div>
+                <Screen>
+                  <Prose textCenter>
+                    <p>
+                      <h1>Return your ballot</h1>
+                    </p>
+                    <p>
+                      Follow the official instructions included with your ballot
+                      link to send in your completed ballot.
+                    </p>
+                  </Prose>
+                </Screen>
               ) : (
                 <BallotContext.Provider
                   value={{

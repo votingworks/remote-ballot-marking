@@ -21,15 +21,14 @@ def create_election():
     user = get_logged_in_admin()
     definition = request.files["definition"]
     definition_json = json.loads(definition.read())
-    db_session.add(
-        Election(
-            id=str(uuid.uuid4()),
-            organization_id=user.organization_id,
-            definition=definition_json,
-        )
+    election = Election(
+        id=str(uuid.uuid4()),
+        organization_id=user.organization_id,
+        definition=definition_json,
     )
+    db_session.add(election)
     db_session.commit()
-    return jsonify(status="ok")
+    return jsonify(electionId=election.id)
 
 
 @api.route("/elections", methods=["GET"])
