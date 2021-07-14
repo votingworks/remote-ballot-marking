@@ -67,13 +67,17 @@ export const useElections = () =>
   useQuery('elections', () => apiFetch<ElectionBase[]>('/api/elections'))
 
 export const useCreateElection = () => {
-  const createElection = ({ definition }: { definition: File }) => {
+  const createElection = async ({ definition }: { definition: File }) => {
     const body = new FormData()
     body.append('definition', definition)
-    return apiFetch('/api/elections', {
-      method: 'POST',
-      body,
-    })
+    const { electionId } = await apiFetch<{ electionId: string }>(
+      '/api/elections',
+      {
+        method: 'POST',
+        body,
+      }
+    )
+    return electionId
   }
 
   return useMutation(createElection, {

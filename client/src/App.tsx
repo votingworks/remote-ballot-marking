@@ -3,15 +3,17 @@
 import React from 'react'
 import {
   BrowserRouter,
+  Link,
   Redirect,
   Route,
   Switch,
+  useHistory,
   useParams,
 } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import {
   ApiProvider,
   AdminUser,
@@ -28,32 +30,127 @@ import {
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
 
+const buttonStyles = css<{ large?: boolean }>`
+  padding: ${props => (props.large ? '0.5em 0.7em' : '0.3em 0.5em')};
+  cursor: pointer;
+  background: #edeff0;
+  border: 1px solid #777878;
+  border-radius: 0.2em;
+`
+
+const Button = styled.button`
+  /* stylelint-disable-next-line value-keyword-case */
+  ${buttonStyles}
+`
+
+const LinkButton = styled(Link)`
+  /* stylelint-disable-next-line value-keyword-case */
+  ${buttonStyles}
+  appearance: button;
+  color: inherit;
+  text-decoration: none;
+`
+
+const AnchorButton = styled.a`
+  /* stylelint-disable-next-line value-keyword-case */
+  ${buttonStyles}
+  appearance: button;
+  color: inherit;
+  text-decoration: none;
+`
+
+const FileInput = styled.input.attrs(() => ({ type: 'file' }))`
+  ::file-selector-button {
+    /* stylelint-disable-next-line value-keyword-case */
+    ${buttonStyles}
+    margin-right: 15px;
+  }
+`
+
+const Logo = () => (
+  <img
+    style={{ height: '1.7em' }}
+    src="/votingworks-wordmark-white.svg"
+    alt="VotingWorks"
+  />
+)
+
 const Header = styled.header`
   display: flex;
   justify-content: space-between;
+  align-items: flex-end;
+  line-height: 1.4em;
   @media print {
     display: none;
+  }
+  padding: 10px 30px;
+  background: #6638b6;
+  color: #ffffff;
+  a {
+    color: inherit;
+    text-decoration: none;
   }
 `
 
 const AdminHeader = ({ adminUser }: { adminUser: AdminUser }) => (
   <Header>
-    <a href="/" style={{ textDecoration: 'none', color: 'black' }}>
-      Remote Ballot Marking by <strong>Voting</strong>Works
+    <a href="/">
+      <Logo />
     </a>
+    <Link to="/">
+      {adminUser.organization.name} &bull; Remote Ballot Marking
+    </Link>
     <span>
       {adminUser.email} &bull; <a href="/auth/logout">Log out</a>
     </span>
   </Header>
 )
 
-const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
+const VoterHeader = ({ voter }: { voter: VoterUser }) => (
+  <Header>
+    <a href="/ballot">
+      <Logo />
+    </a>
+    <span>
+      {voter.email} &bull; <a href="/voter/logout">Log out</a>
+    </span>
+  </Header>
+)
+
+const Section = styled.section`
+  margin-bottom: 30px;
+`
+
+const FullScreen = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+`
+
+const LoginScreen = () => (
+  <FullScreen>
+    <img
+      style={{ height: '6em' }}
+      src="/votingworks-wordmark-purple.svg"
+      alt="VotingWorks"
+    />
+    <h2>Remote Ballot Marking</h2>
+    <AnchorButton large href="/auth/login">
+      Log in
+    </AnchorButton>
+  </FullScreen>
+)
+
+const AdminHome = () => {
   const createElection = useCreateElection()
-  const { register, handleSubmit, reset } = useForm<{
+  const { register, handleSubmit } = useForm<{
     definition: FileList
   }>()
   const elections = useElections()
   const deleteElection = useDeleteElection()
+  const history = useHistory()
 
   const onSubmitCreateElection = async ({
     definition,
@@ -61,8 +158,10 @@ const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
     definition: FileList
   }) => {
     try {
-      await createElection.mutateAsync({ definition: definition[0] })
-      reset()
+      const electionId = await createElection.mutateAsync({
+        definition: definition[0],
+      })
+      history.push(`/elections/${electionId}`)
     } catch (error) {
       toast.error(error.message)
     }
@@ -78,43 +177,52 @@ const AdminHome = ({ adminUser }: { adminUser: AdminUser }) => {
 
   return (
     <div>
-      <h1>{adminUser.organization.name}</h1>
-      <div>
-        <h2>Add Election</h2>
+      <Section>
+        <h2>Add an election</h2>
         <form onSubmit={handleSubmit(onSubmitCreateElection)}>
           <div>
-            <label htmlFor="definition">Upload election definition: </label>
-            <input type="file" {...register('definition')} />
+            <label htmlFor="definition">
+              Upload an election definition file:{' '}
+            </label>
+            <div style={{ marginTop: '15px' }}>
+              <FileInput {...register('definition')} />
+            </div>
           </div>
-          <div>
-            <input type="submit" />
-          </div>
+          <Button type="submit" style={{ marginTop: '15px' }}>
+            Submit
+          </Button>
         </form>
-      </div>
-      <div>
-        <h2>Elections</h2>
-        {elections.isSuccess &&
-          (elections.data.length === 0 ? (
-            <p>No elections added</p>
-          ) : (
-            <ul>
-              {elections.data.map(({ definition, id }) => (
-                <li key={id}>
-                  <a href={`/election/${id}`}>
-                    {definition.title} - {definition.county.name} -{' '}
-                    {definition.county.id}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => onClickDeleteElection(id)}
-                  >
-                    &#10005;
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ))}
-      </div>
+      </Section>
+      {elections.isSuccess && elections.data.length > 0 && (
+        <Section>
+          <h2>Elections</h2>
+          <ul style={{ padding: 0, listStyle: 'none' }}>
+            {elections.data.map(({ definition, id }) => (
+              <li key={id} style={{ marginBottom: '10px' }}>
+                <LinkButton large to={`/elections/${id}`}>
+                  {definition.title} - {definition.county.name} -{' '}
+                  {definition.county.id}
+                </LinkButton>
+                <button
+                  type="button"
+                  onClick={() => onClickDeleteElection(id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#b30000',
+                    fontWeight: 800,
+                    fontSize: '1.2em',
+                    cursor: 'pointer',
+                    marginLeft: '5px',
+                  }}
+                >
+                  &#10005;
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </div>
   )
 }
@@ -137,39 +245,71 @@ const SendBallots = ({ election }: { election: Election }) => {
         voterIds: election.voters.map(voter => voter.id),
         template,
       })
+      toast.success('Ballots sent!')
     } catch (error) {
       toast.error(error.message)
     }
   }
 
   return (
-    <div>
-      <h2>Send Ballots</h2>
+    <Section>
+      <h2>Send ballots</h2>
       <form onSubmit={handleSubmit(onSubmitSendBallotEmails)}>
-        <div>
-          <label>Enter an email template: </label>
-          <textarea
-            {...register('template')}
-            style={{ display: 'block', height: '150px', width: '300px' }}
-          />
-        </div>
-        <div>
-          <p>Email preview: </p>
-          <p
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'top',
+            width: '100%',
+            height: '200px',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <label>Enter an email template: </label>
+            <textarea
+              {...register('template')}
+              style={{
+                display: 'block',
+                height: '100%',
+                width: '100%',
+                border: '1px solid #bebfc0',
+                padding: '5px 8px',
+                marginTop: '10px',
+                overflowY: 'scroll',
+                resize: 'none',
+              }}
+            />
+          </div>
+          <div
             style={{
-              border: '1px solid lightgray',
-              height: '150px',
-              width: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              marginLeft: '30px',
+              flex: 1,
             }}
           >
-            {watch('template')}
-            <br />
-            {window.location.host}/voter/1a2b3c4d5e6f7a8b
-          </p>
+            <div>Email preview: </div>
+            <div
+              style={{
+                border: '1px solid #bebfc0',
+                height: '100%',
+                width: '100%',
+                padding: '8px',
+                marginTop: '10px',
+                overflowWrap: 'break-word',
+                overflowY: 'scroll',
+              }}
+            >
+              {watch('template')}
+              <br />
+              {window.location.host}/voter/1a2b3c4d5e6f7a8b
+            </div>
+          </div>
         </div>
-        <input type="submit" />
+        <Button type="submit" style={{ marginTop: '15px' }}>
+          Send ballots to all voters
+        </Button>
       </form>
-    </div>
+    </Section>
   )
 }
 
@@ -200,26 +340,25 @@ const ElectionScreen = () => {
       <strong>
         {definition.county.name} - {definition.county.id}
       </strong>
-      <div>
-        <h2>Add Voters</h2>
+      <Section>
+        <h2>Voters</h2>
         <form onSubmit={handleSubmit(onSubmitVoters)}>
           <div>
-            <label htmlFor="voters">Upload voter file: </label>
-            <input type="file" {...register('voters')} />
+            <label htmlFor="voters">Upload a voter file: </label>
+            <div style={{ marginTop: '15px' }}>
+              <FileInput {...register('voters')} />
+            </div>
           </div>
           <div>
-            <input type="submit" />
+            <Button type="submit" style={{ marginTop: '15px' }}>
+              Submit
+            </Button>
           </div>
         </form>
-      </div>
-      <div>
-        <h2>Voters</h2>
-        {election.data.voters.length === 0 ? (
-          <p>No voters added yet</p>
-        ) : (
-          <div>
-            <p>{election.data.voters.length} voters added</p>
-            <FlexTable scrollable height={200}>
+        {election.data.voters.length > 0 && (
+          <>
+            <p>Total voters: {election.data.voters.length}</p>
+            <FlexTable scrollable style={{ height: '200px' }}>
               <thead>
                 <tr>
                   <th>Voter ID</th>
@@ -244,34 +383,15 @@ const ElectionScreen = () => {
                 ))}
               </tbody>
             </FlexTable>
-          </div>
+          </>
         )}
-      </div>
-      <SendBallots election={election.data} />
+      </Section>
+      {election.data.voters.length > 0 && (
+        <SendBallots election={election.data} />
+      )}
     </div>
   )
 }
-
-const VoterHeader = ({ voter }: { voter: VoterUser }) => (
-  <Header>
-    <a href="/ballot" style={{ textDecoration: 'none', color: 'black' }}>
-      Remote Ballot Marking by <strong>Voting</strong>Works
-    </a>
-    <span>
-      {voter.email} &bull; <a href="/voter/logout">Log out</a>
-    </span>
-  </Header>
-)
-
-const LoginScreen = () => (
-  <div>
-    <h1>Remote Ballot Marking</h1>
-    <p>
-      by <strong>Voting</strong>Works
-    </p>
-    <a href="/auth/login">Log in</a>
-  </div>
-)
 
 const Routes = () => {
   const auth = useAuth()
@@ -288,7 +408,9 @@ const Routes = () => {
             <LoginScreen />
           </Route>
           <Route exact path="/ballot">
-            Thank you for using VotingWorks Remote Ballot Marking.
+            <FullScreen>
+              Thank you for using VotingWorks Remote Ballot Marking.
+            </FullScreen>
           </Route>
           <Redirect to="/" />
         </Switch>
@@ -312,16 +434,24 @@ const Routes = () => {
 
   return (
     <BrowserRouter>
-      <AdminHeader adminUser={adminUser!} />
-      <Switch>
-        <Route path="/election/:electionId">
-          <ElectionScreen />
-        </Route>
-        <Route exact path="/">
-          <AdminHome adminUser={adminUser!} />
-        </Route>
-        <Route>Not found</Route>
-      </Switch>
+      <div style={{ fontSize: '16px', background: '#ffffff' }}>
+        <AdminHeader adminUser={adminUser!} />
+        <div style={{ padding: '0 30px' }}>
+          <Switch>
+            <Route path="/elections/:electionId">
+              <ElectionScreen />
+            </Route>
+            <Route exact path="/">
+              <AdminHome />
+            </Route>
+            <Route>
+              <FullScreen>
+                <p>Not found</p>
+              </FullScreen>
+            </Route>
+          </Switch>
+        </div>
+      </div>
     </BrowserRouter>
   )
 }
