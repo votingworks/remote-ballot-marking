@@ -408,7 +408,9 @@ const Routes = () => {
             <LoginScreen />
           </Route>
           <Route exact path="/ballot">
-            Thank you for using VotingWorks Remote Ballot Marking.
+            <FullScreen>
+              Thank you for using VotingWorks Remote Ballot Marking.
+            </FullScreen>
           </Route>
           <Redirect to="/" />
         </Switch>
