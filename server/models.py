@@ -8,6 +8,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     JSON,
+    Boolean,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
@@ -83,6 +84,8 @@ class Voter(BaseModel):
     email = Column(String(200), nullable=False)
     precinct = Column(String(200), nullable=False)  # Must match Election.definition
     ballot_style = Column(String(200), nullable=False)  # Must match Election.definition
+
+    was_manually_added = Column(Boolean, nullable=False)
 
     election_id = Column(
         String(200), ForeignKey("election.id", ondelete="cascade"), nullable=False
