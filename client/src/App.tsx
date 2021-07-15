@@ -32,6 +32,7 @@ import {
 } from './api'
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
+import { getPrecinctById } from './bmd/utils/election'
 
 const buttonStyles = css<{ large?: boolean }>`
   padding: ${props => (props.large ? '0.5em 0.7em' : '0.3em 0.5em')};
@@ -474,7 +475,15 @@ const ElectionScreen = () => {
                   <tr key={voter.id}>
                     <td>{voter.externalId}</td>
                     <td>{voter.email}</td>
-                    <td>{voter.precinct}</td>
+                    <td>
+                      {
+                        getPrecinctById({
+                          election: definition,
+                          precinctId: voter.precinct,
+                        })!.name
+                      }{' '}
+                      ({voter.precinct})
+                    </td>
                     <td>{voter.ballotStyle}</td>
                     <td>
                       {voter.wasManuallyAdded
