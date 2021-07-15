@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 import requests
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Conflict
 
 from .config import HTTP_ORIGIN, MAILGUN_API_KEY, MAILGUN_DOMAIN
 from .models import *
@@ -68,6 +68,7 @@ def get_election(election_id: str):
                 precinct=voter.precinct,
                 ballotStyle=voter.ballot_style,
                 ballotEmailLastSentAt=isoformat(voter.ballot_email_last_sent_at),
+                wasManuallyAdded=voter.was_manually_added,
             )
             for voter in voters
         ],
@@ -93,10 +94,10 @@ def duplicates(items: List):
     return dups
 
 
-@api.route("/elections/<election_id>/voters", methods=["PUT"])
-def set_election_voters(election_id: str):
+@api.route("/elections/<election_id>/voters/file", methods=["PUT"])
+def upload_voter_file(election_id: str):
     election = get_or_404(Election, election_id)
-    voter_file = request.files["voters"]
+    voter_file = request.files["voterFile"]
 
     # Parse XML or CSV voter files
     if "xml" in voter_file.mimetype:
@@ -136,6 +137,7 @@ def set_election_voters(election_id: str):
                 ballot_style=voter["Ballot Style"],
                 precinct=voter["Precinct"],
                 election_id=election_id,
+                was_manually_added=False,
             )
             for voter in parsed_voters
         ]
@@ -181,12 +183,53 @@ def set_election_voters(election_id: str):
     db_session.add_all(voters_to_add)
 
     # Delete outdated voters
-    Voter.query.filter_by(election_id=election_id).filter(
+    Voter.query.filter_by(election_id=election_id, was_manually_added=False).filter(
         Voter.email.notin_([voter.email for voter in voters])
     ).delete(synchronize_session=False)
 
     db_session.commit()
 
+    return jsonify(status="ok")
+
+
+@api.route("/elections/<election_id>/voters", methods=["POST"])
+def add_voter(election_id: str):
+    get_or_404(Election, election_id)
+    voter = cast(dict, request.get_json())
+
+    if Voter.query.filter_by(
+        election_id=election_id, email=voter["email"]
+    ).one_or_none():
+        raise Conflict(
+            f"A voter with email {voter['email']} has already been added to this election"
+        )
+
+    db_session.add(
+        Voter(
+            id=str(uuid.uuid4()),
+            external_id=voter["externalId"],
+            email=voter["email"],
+            ballot_style=voter["ballotStyle"],
+            precinct=voter["precinct"],
+            election_id=election_id,
+            was_manually_added=True,
+        )
+    )
+    db_session.commit()
+    return jsonify(status="ok")
+
+
+@api.route("/elections/<election_id>/voters/<voter_id>", methods=["DELETE"])
+def delete_voter(election_id: str, voter_id: str):
+    voter = Voter.query.filter_by(election_id=election_id, id=voter_id).one_or_none()
+    if voter is None:
+        return NotFound()
+    if not voter.was_manually_added:
+        return Conflict(
+            "Cannot individually delete voters that were not individually added"
+        )
+    db_session.delete(voter)
+    db_session.commit()
     return jsonify(status="ok")
 
 

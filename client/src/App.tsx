@@ -21,11 +21,14 @@ import {
   useElections,
   useElection,
   Election,
-  useSetVoters,
+  useUploadVoterFile,
   useSendBallotEmails,
   useAuth,
   useDeleteElection,
   VoterUser,
+  useAddVoter,
+  NewVoter,
+  useDeleteVoter,
 } from './api'
 import FlexTable from './FlexTable'
 import VoterBallot from './VoterBallot'
@@ -60,6 +63,7 @@ const AnchorButton = styled.a`
 `
 
 const FileInput = styled.input.attrs(() => ({ type: 'file' }))`
+  max-width: 18em;
   ::file-selector-button {
     /* stylelint-disable-next-line value-keyword-case */
     ${buttonStyles}
@@ -313,20 +317,110 @@ const SendBallots = ({ election }: { election: Election }) => {
   )
 }
 
+const Card = styled.div`
+  border: 1px solid #bebfc0;
+  border-radius: 5px;
+  padding: 20px;
+`
+
+const Form = styled.form`
+  display: grid;
+  grid-template-columns: max-content max-content;
+  grid-gap: 10px;
+  align-items: baseline;
+  label {
+    justify-self: end;
+  }
+  select {
+    padding: 1px 2px;
+  }
+  input,
+  select {
+    width: 13em;
+  }
+  button {
+    grid-column: 2;
+    justify-self: end;
+  }
+`
+
+const AddVoter = ({ election }: { election: Election }) => {
+  const addVoter = useAddVoter(election.id)
+  const { register, handleSubmit, reset, watch } = useForm<NewVoter>()
+
+  const onSubmitAddVoter = async (newVoter: NewVoter) => {
+    try {
+      await addVoter.mutateAsync(newVoter)
+      reset()
+    } catch (error) {
+      toast.error(error)
+    }
+  }
+
+  return (
+    <Card style={{ marginLeft: '15px' }}>
+      <div>Add an individual voter:</div>
+      <Form
+        onSubmit={handleSubmit(onSubmitAddVoter)}
+        style={{ marginTop: '15px' }}
+      >
+        <label>Voter ID: </label>
+        <input {...register('externalId')} />
+        <label>Email: </label>
+        <input type="email" {...register('email')} />
+        <label>Precinct: </label>
+        <select {...register('precinct')}>
+          <option />
+          {election.definition.precincts.map(precinct => (
+            <option key={precinct.id} value={precinct.id}>
+              {precinct.name} ({precinct.id})
+            </option>
+          ))}
+        </select>
+        <label>Ballot style: </label>
+        <select {...register('ballotStyle')}>
+          {!watch('precinct') && <option />}
+          {election.definition.ballotStyles
+            .filter(
+              ballotStyle =>
+                !watch('precinct') ||
+                ballotStyle.precincts.includes(watch('precinct'))
+            )
+            .map(ballotStyle => (
+              <option key={ballotStyle.id} value={ballotStyle.id}>
+                {ballotStyle.id}
+              </option>
+            ))}
+        </select>
+        <Button type="submit">Add voter</Button>
+      </Form>
+    </Card>
+  )
+}
+
 const ElectionScreen = () => {
   const { electionId } = useParams<{ electionId: string }>()
   const election = useElection(electionId)
-  const setVoters = useSetVoters(electionId)
+  const uploadVoterFile = useUploadVoterFile(electionId)
   const { register, handleSubmit, reset } = useForm<{
-    voters: FileList
+    voterFile: FileList
   }>()
+  const deleteVoter = useDeleteVoter(electionId)
 
   if (!election.isSuccess) return null
 
-  const onSubmitVoters = async ({ voters }: { voters: FileList }) => {
+  const onSubmitVoterFile = async ({ voterFile }: { voterFile: FileList }) => {
     try {
-      await setVoters.mutateAsync({ voters: voters[0] })
+      await uploadVoterFile.mutateAsync({ voterFile: voterFile[0] })
       reset()
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  const onClickDeleteVoter = async (voterId: string) => {
+    try {
+      await deleteVoter.mutateAsync({ voterId })
     } catch (error) {
       toast.error(error.message)
     }
@@ -342,19 +436,24 @@ const ElectionScreen = () => {
       </strong>
       <Section>
         <h2>Voters</h2>
-        <form onSubmit={handleSubmit(onSubmitVoters)}>
-          <div>
-            <label htmlFor="voters">Upload a voter file: </label>
-            <div style={{ marginTop: '15px' }}>
-              <FileInput {...register('voters')} />
-            </div>
-          </div>
-          <div>
-            <Button type="submit" style={{ marginTop: '15px' }}>
-              Submit
-            </Button>
-          </div>
-        </form>
+        <div style={{ display: 'flex' }}>
+          <Card>
+            <form onSubmit={handleSubmit(onSubmitVoterFile)}>
+              <div>
+                <label htmlFor="voters">Upload a voter file: </label>
+                <div style={{ marginTop: '15px' }}>
+                  <FileInput {...register('voterFile')} />
+                </div>
+              </div>
+              <div>
+                <Button type="submit" style={{ marginTop: '15px' }}>
+                  Submit
+                </Button>
+              </div>
+            </form>
+          </Card>
+          <AddVoter election={election.data} />
+        </div>
         {election.data.voters.length > 0 && (
           <>
             <p>Total voters: {election.data.voters.length}</p>
@@ -365,7 +464,9 @@ const ElectionScreen = () => {
                   <th>Email</th>
                   <th>Precinct</th>
                   <th>Ballot Style</th>
+                  <th>Source</th>
                   <th>Ballot Sent</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -376,8 +477,20 @@ const ElectionScreen = () => {
                     <td>{voter.precinct}</td>
                     <td>{voter.ballotStyle}</td>
                     <td>
+                      {voter.wasManuallyAdded
+                        ? 'Individually added'
+                        : 'Voter file'}
+                    </td>
+                    <td>
                       {voter.ballotEmailLastSentAt &&
                         new Date(voter.ballotEmailLastSentAt).toLocaleString()}
+                    </td>
+                    <td>
+                      {voter.wasManuallyAdded && (
+                        <Button onClick={() => onClickDeleteVoter(voter.id)}>
+                          Delete
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

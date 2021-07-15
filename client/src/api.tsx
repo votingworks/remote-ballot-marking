@@ -6,6 +6,7 @@ import {
   useMutation,
   useQuery,
 } from 'react-query'
+import { Election as ElectionDefinition } from '@votingworks/ballot-encoder'
 
 const queryClient = new QueryClient()
 
@@ -63,12 +64,6 @@ export interface ElectionBase {
   definition: ElectionDefinition
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ElectionDefinition {
-  title: string
-  county: { id: string; name: string }
-}
-
 export const useElections = () =>
   useQuery('elections', () => apiFetch<ElectionBase[]>('/api/elections'))
 
@@ -112,6 +107,7 @@ export interface Voter {
   precinct: string
   ballotStyle: string
   ballotEmailLastSentAt: string
+  wasManuallyAdded: boolean
 }
 
 export const useElection = (electionId: string) =>
@@ -119,17 +115,48 @@ export const useElection = (electionId: string) =>
     apiFetch<Election>(`/api/elections/${electionId}`)
   )
 
-export const useSetVoters = (electionId: string) => {
-  const setVoters = ({ voters }: { voters: File }) => {
+export const useUploadVoterFile = (electionId: string) => {
+  const uploadVoterFile = ({ voterFile }: { voterFile: File }) => {
     const body = new FormData()
-    body.append('voters', voters)
-    return apiFetch(`/api/elections/${electionId}/voters`, {
+    body.append('voterFile', voterFile)
+    return apiFetch(`/api/elections/${electionId}/voters/file`, {
       method: 'PUT',
       body,
     })
   }
 
-  return useMutation(setVoters, {
+  return useMutation(uploadVoterFile, {
+    onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
+  })
+}
+
+export type NewVoter = Pick<
+  Voter,
+  'externalId' | 'email' | 'ballotStyle' | 'precinct'
+>
+
+export const useAddVoter = (electionId: string) => {
+  const addVoter = (voter: NewVoter) => {
+    return apiFetch(`/api/elections/${electionId}/voters`, {
+      method: 'POST',
+      body: JSON.stringify(voter),
+      headers: { 'Content-type': 'application/json' },
+    })
+  }
+
+  return useMutation(addVoter, {
+    onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
+  })
+}
+
+export const useDeleteVoter = (electionId: string) => {
+  const deleteVoter = ({ voterId }: { voterId: string }) => {
+    return apiFetch(`/api/elections/${electionId}/voters/${voterId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  return useMutation(deleteVoter, {
     onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
   })
 }
