@@ -24,8 +24,14 @@ export const apiFetch = async <T extends unknown>(
   if (response.ok) return response.json() as Promise<T>
 
   const responseText = await response.text()
-  console.error(responseText) // eslint-disable-line no-console
-  throw new Error(responseText)
+  let error
+  try {
+    error = JSON.parse(responseText).message
+  } catch (e) {
+    error = responseText
+  }
+  console.error(error) // eslint-disable-line no-console
+  throw new Error(error)
 }
 
 export interface Auth {

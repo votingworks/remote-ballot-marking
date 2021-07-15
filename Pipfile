@@ -11,6 +11,7 @@ pylint = "*"
 # for now (or enable pre-releases for all packages, which we don't want)
 black = "==19.10b0"
 types-requests = "*"
+types-chardet = "*"
 
 [packages]
 auth0-python = "*"
