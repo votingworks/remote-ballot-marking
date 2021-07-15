@@ -2,15 +2,22 @@ import uuid
 import json
 import secrets
 from datetime import datetime
-from typing import Optional, cast
+from typing import List, Optional, cast
 from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 import requests
 from flask import Blueprint, request, jsonify
+from werkzeug.exceptions import BadRequest
 
 from .config import HTTP_ORIGIN, MAILGUN_API_KEY, MAILGUN_DOMAIN
 from .models import *
 from .auth import get_logged_in_admin
+from .csv_parse import (
+    CSVColumnType,
+    CSVValueType,
+    decode_csv_file,
+    parse_csv,
+)
 
 
 api = Blueprint("api", __name__)
@@ -75,24 +82,91 @@ def delete_election(election_id: str):
     return jsonify(status="ok")
 
 
+def duplicates(items: List):
+    seen = set()
+    dups = set()
+    for item in items:
+        if item in seen:
+            dups.add(item)
+        else:
+            seen.add(item)
+    return dups
+
+
 @api.route("/elections/<election_id>/voters", methods=["PUT"])
 def set_election_voters(election_id: str):
+    election = get_or_404(Election, election_id)
     voter_file = request.files["voters"]
 
-    voters = [
-        Voter(
-            id=str(uuid.uuid4()),
-            external_id=voter.find(".//{*}VoterIdentification").attrib["Id"],  # type: ignore
-            email=voter.find(".//{*}AddressLine[@type='email']").text,  # type: ignore
-            precinct=voter.find(".//{*}BallotFormIdentifier").text,  # type: ignore
-            ballot_style=voter.find(".//{*}PollingPlace").attrib["IdNumber"],  # type: ignore
-            election_id=election_id,
-        )
-        for voter in ET.parse(voter_file).getroot().findall(".//{*}VoterDetails")  # type: ignore
-    ]
+    # Parse XML or CSV voter files
+    if "xml" in voter_file.mimetype:
+        voters = [
+            Voter(
+                id=str(uuid.uuid4()),
+                external_id=voter.find(".//{*}VoterIdentification").attrib["Id"],  # type: ignore
+                email=voter.find(".//{*}AddressLine[@type='email']").text,  # type: ignore
+                precinct=voter.find(".//{*}BallotFormIdentifier").text,  # type: ignore
+                ballot_style=voter.find(".//{*}PollingPlace").attrib["IdNumber"],  # type: ignore
+                election_id=election_id,
+            )
+            for voter in ET.parse(voter_file).getroot().findall(".//{*}VoterDetails")  # type: ignore
+        ]
+        duplicate_emails = duplicates([voter.email for voter in voters])
+        if len(duplicate_emails) > 0:
+            raise BadRequest(
+                "Each voter must have a unique email."
+                f" Found duplicates: {', '.join(duplicate_emails)}"
+            )
 
-    # Remove duplicates
-    voters_by_email = {voter.email: voter for voter in voters}
+    elif "csv" in voter_file.mimetype:
+        parsed_voters = parse_csv(
+            decode_csv_file(voter_file),
+            [
+                CSVColumnType(name="Voter ID", value_type=CSVValueType.TEXT),
+                CSVColumnType(name="Email", value_type=CSVValueType.EMAIL, unique=True),
+                CSVColumnType(name="Ballot Style", value_type=CSVValueType.TEXT),
+                CSVColumnType(name="Precinct", value_type=CSVValueType.TEXT),
+            ],
+        )
+        voters = [
+            Voter(
+                id=str(uuid.uuid4()),
+                external_id=voter["Voter ID"],
+                email=voter["Email"],
+                ballot_style=voter["Ballot Style"],
+                precinct=voter["Precinct"],
+                election_id=election_id,
+            )
+            for voter in parsed_voters
+        ]
+    else:
+        raise BadRequest("Voter file must be in XML or CSV format")
+
+    # Validate voter data against election
+    for voter in voters:
+        if not any(
+            precinct["id"] == voter.precinct
+            for precinct in election.definition["precincts"]
+        ):
+            raise BadRequest(
+                f"Precinct {voter.precinct} is not in the election definition (voter {voter.email})"
+            )
+        ballot_style = next(
+            (
+                ballot_style
+                for ballot_style in election.definition["ballotStyles"]
+                if ballot_style["id"] == voter.ballot_style
+            ),
+            None,
+        )
+        if ballot_style is None:
+            raise BadRequest(
+                f"Ballot style {voter.ballot_style} is not in the election definition (voter {voter.email})"
+            )
+        if voter.precinct not in ballot_style["precincts"]:
+            raise BadRequest(
+                f"Precinct {voter.precinct} is not associated with ballot style {voter.ballot_style} in the election definition (voter {voter.email})"
+            )
 
     # Add new voters
     existing_voter_emails = {
@@ -102,15 +176,13 @@ def set_election_voters(election_id: str):
         )
     }
     voters_to_add = [
-        voter
-        for email, voter in voters_by_email.items()
-        if email not in existing_voter_emails
+        voter for voter in voters if voter.email not in existing_voter_emails
     ]
     db_session.add_all(voters_to_add)
 
     # Delete outdated voters
     Voter.query.filter_by(election_id=election_id).filter(
-        Voter.email.notin_(voters_by_email.keys())
+        Voter.email.notin_([voter.email for voter in voters])
     ).delete(synchronize_session=False)
 
     db_session.commit()
