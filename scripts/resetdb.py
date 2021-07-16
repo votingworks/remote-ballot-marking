@@ -1,8 +1,8 @@
 import sys, os
 from sqlalchemy_utils import database_exists, create_database, drop_database
 
-# from alembic.config import Config
-# from alembic import command
+from alembic.config import Config
+from alembic import command
 from server.database import engine, reset_db
 
 if __name__ == "__main__":
@@ -16,16 +16,16 @@ if __name__ == "__main__":
     else:
         if database_exists(engine.url):
             print("dropping database…")
-            drop_database(engine.url)
+            drop_database(engine.url)  # pylint: disable=no-member
 
         print("creating database…")
-        create_database(engine.url)
+        create_database(engine.url)  # pylint: disable=no-member
 
     print("resetting tables…")
     reset_db()
 
-    # print("stamping latest migration revision...")
-    # # Following recipe: https://alembic.sqlalchemy.org/en/latest/cookbook.html#building-an-up-to-date-database-from-scratch
-    # alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "../alembic.ini"))
-    # alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
-    # command.stamp(alembic_cfg, "head")
+    print("stamping latest migration revision...")
+    # Following recipe: https://alembic.sqlalchemy.org/en/latest/cookbook.html#building-an-up-to-date-database-from-scratch
+    alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "../alembic.ini"))
+    alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
+    command.stamp(alembic_cfg, "head")
