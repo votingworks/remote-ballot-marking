@@ -108,6 +108,7 @@ export interface Voter {
   ballotStyle: string
   ballotEmailLastSentAt: string
   wasManuallyAdded: boolean
+  latestActivity: VoterActivity | null
 }
 
 export const useElection = (electionId: string) =>
@@ -170,6 +171,26 @@ export const useSendBallotEmails = (electionId: string) => {
     })
 
   return useMutation(sendBallotEmails, {
+    onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
+  })
+}
+
+interface VoterActivity {
+  voterId: string
+  activityName: string
+  timestamp: string
+  info: object | null // eslint-disable-line @typescript-eslint/ban-types
+}
+
+export const useRecordVoterActivity = (electionId: string) => {
+  const recordVoterActivity = ({ voterId, ...activity }: VoterActivity) =>
+    apiFetch(`/api/elections/${electionId}/voters/${voterId}/activity`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+      headers: { 'Content-type': 'application/json' },
+    })
+
+  return useMutation(recordVoterActivity, {
     onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
   })
 }
