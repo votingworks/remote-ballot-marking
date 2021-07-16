@@ -466,7 +466,7 @@ const ElectionScreen = () => {
                   <th>Precinct</th>
                   <th>Ballot Style</th>
                   <th>Source</th>
-                  <th>Ballot Sent</th>
+                  <th>Latest Activity</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -491,8 +491,12 @@ const ElectionScreen = () => {
                         : 'Voter file'}
                     </td>
                     <td>
-                      {voter.ballotEmailLastSentAt &&
-                        new Date(voter.ballotEmailLastSentAt).toLocaleString()}
+                      {voter.latestActivity &&
+                        {
+                          SentBallotUrl: 'Sent ballot',
+                          LoggedIn: 'Logged in',
+                          ConfirmedPrint: 'Confirmed print',
+                        }[voter.latestActivity.activityName]}
                     </td>
                     <td>
                       {voter.wasManuallyAdded && (

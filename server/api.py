@@ -57,6 +57,15 @@ def get_election(election_id: str):
     voters = (
         Voter.query.filter_by(election_id=election_id).order_by(Voter.external_id).all()
     )
+
+    def serialize_activity(activity: VoterActivity):
+        return dict(
+            voterId=activity.voter_id,
+            activityName=activity.activity_name,
+            timestamp=activity.created_at,
+            info=activity.info,
+        )
+
     return jsonify(
         id=election.id,
         definition=election.definition,
@@ -69,6 +78,11 @@ def get_election(election_id: str):
                 ballotStyle=voter.ballot_style,
                 ballotEmailLastSentAt=isoformat(voter.ballot_email_last_sent_at),
                 wasManuallyAdded=voter.was_manually_added,
+                latestActivity=(
+                    serialize_activity(voter.activities[-1])
+                    if len(voter.activities) > 0
+                    else None
+                ),
             )
             for voter in voters
         ],
@@ -248,6 +262,7 @@ def send_voter_ballot_emails(election_id: str):
             voter.email, email_request["template"], voter.ballot_url_token
         )
         voter.ballot_email_last_sent_at = datetime.now(timezone.utc)
+        record_voter_activity(voter.id, "SentBallotUrl")
 
     db_session.commit()
 
@@ -272,6 +287,22 @@ def send_ballot_email(voter_email: str, template: str, ballot_url_token: str):
             "text": f"{template}\n{ballot_url}",
         },
     )
+
+
+@api.route("/elections/<election_id>/voters/<voter_id>/activity", methods=["POST"])
+def record_voter_action(
+    election_id: str, voter_id: str  # pylint: disable=unused-argument
+):
+    get_or_404(Voter, voter_id)
+    activity = cast(dict, request.get_json())
+    record_voter_activity(
+        voter_id,
+        activity["activityName"],
+        activity["info"],
+        datetime.fromisoformat(activity["timestamp"].replace("Z", "+00:00")),
+    )
+    db_session.commit()
+    return jsonify(status="ok")
 
 
 def isoformat(date: Optional[datetime]):

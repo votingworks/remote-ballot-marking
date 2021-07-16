@@ -23,12 +23,13 @@ import getPrinter from './bmd/utils/printer'
 
 import FocusManager from './bmd/components/FocusManager'
 import { getBallotStyle, getContests } from './bmd/utils/election'
-import { VoterUser } from './api'
+import { useRecordVoterActivity, VoterUser } from './api'
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 const VoterBallot = ({ voter }: { voter: VoterUser }) => {
   const [votes, setVotes] = useState({})
   const [hasPrinted, setHasPrinted] = useState(false)
+  const recordVoterActivity = useRecordVoterActivity(voter.election.id)
 
   const screenReader = new AriaScreenReader(
     new SpeechSynthesisTextToSpeech(memoize(getUSEnglishVoice))
@@ -123,6 +124,12 @@ const VoterBallot = ({ voter }: { voter: VoterUser }) => {
                   value={{
                     activateBallot: () => {},
                     markVoterCardPrinted: async () => {
+                      await recordVoterActivity.mutateAsync({
+                        voterId: voter.id,
+                        activityName: 'ConfirmedPrint',
+                        timestamp: new Date().toISOString(),
+                        info: null,
+                      })
                       setHasPrinted(true)
                       return true
                     },

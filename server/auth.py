@@ -107,7 +107,10 @@ def admin_logout():
 @auth.route("/voter/<token>")
 def voter_login(token: str):
     voter = Voter.query.filter_by(ballot_url_token=token).one_or_none()
-    set_logged_in_voter(voter and voter.id)
+    if voter:
+        set_logged_in_voter(voter.id)
+        record_voter_activity(voter.id, "LoggedIn")
+        db_session.commit()
     return redirect("/ballot")
 
 

@@ -1,5 +1,6 @@
-from typing import Type
+from typing import Any, Dict, Type
 from datetime import datetime as dt, timezone
+import uuid
 from werkzeug.exceptions import NotFound
 
 from sqlalchemy import (
@@ -95,8 +96,38 @@ class Voter(BaseModel):
     ballot_url_token = Column(String(200))
     ballot_email_last_sent_at = Column(UTCDateTime)
 
+    activities = relationship(
+        "VoterActivity", uselist=True, order_by="VoterActivity.created_at"
+    )
+
     __table_args__ = (
         UniqueConstraint("election_id", "external_id"),
         UniqueConstraint("election_id", "email"),
         UniqueConstraint("ballot_url_token"),
+    )
+
+
+class VoterActivity(BaseModel):
+    id = Column(String(200), primary_key=True)
+    voter_id = Column(
+        String(200), ForeignKey("voter.id", ondelete="cascade"), nullable=False
+    )
+    activity_name = Column(String(200), nullable=False)
+    info = Column(JSON)
+
+
+def record_voter_activity(
+    voter_id: str,
+    activity_name: str,
+    info: Dict[str, Any] = None,
+    timestamp: dt = dt.now(timezone.utc),
+):
+    db_session.add(
+        VoterActivity(
+            id=str(uuid.uuid4()),
+            voter_id=voter_id,
+            activity_name=activity_name,
+            info=info,
+            created_at=timestamp,
+        )
     )
