@@ -8,12 +8,14 @@ import {
   Route,
   Switch,
   useHistory,
+  useLocation,
   useParams,
 } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import styled, { css } from 'styled-components'
+import Modal from 'react-modal'
 import {
   ApiProvider,
   AdminUser,
@@ -399,8 +401,14 @@ const AddVoter = ({ election }: { election: Election }) => {
   )
 }
 
+const useQueryParams = () => {
+  return Object.fromEntries(new URLSearchParams(useLocation().search).entries())
+}
+
 const ElectionScreen = () => {
+  const history = useHistory()
   const { electionId } = useParams<{ electionId: string }>()
+  const { voterId } = useQueryParams()
   const election = useElection(electionId)
   const uploadVoterFile = useUploadVoterFile(electionId)
   const { register, handleSubmit, reset } = useForm<{
@@ -419,6 +427,7 @@ const ElectionScreen = () => {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const onClickDeleteVoter = async (voterId: string) => {
     try {
       await deleteVoter.mutateAsync({ voterId })
@@ -427,7 +436,15 @@ const ElectionScreen = () => {
     }
   }
 
-  const { definition } = election.data
+  const { definition, voters } = election.data
+  const selectedVoter = voterId && voters.find(({ id }) => id === voterId)
+
+  const prettyActivityName = (activityName: string) =>
+    ({
+      SentBallotUrl: 'Sent ballot',
+      LoggedIn: 'Logged in',
+      ConfirmedPrint: 'Confirmed print',
+    }[activityName])
 
   return (
     <div>
@@ -455,9 +472,9 @@ const ElectionScreen = () => {
           </Card>
           <AddVoter election={election.data} />
         </div>
-        {election.data.voters.length > 0 && (
+        {voters.length > 0 && (
           <>
-            <p>Total voters: {election.data.voters.length}</p>
+            <p>Total voters: {voters.length}</p>
             <FlexTable scrollable style={{ height: '200px' }}>
               <thead>
                 <tr>
@@ -466,12 +483,12 @@ const ElectionScreen = () => {
                   <th>Precinct</th>
                   <th>Ballot Style</th>
                   <th>Source</th>
-                  <th>Latest Activity</th>
+                  <th>Activity</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {election.data.voters.map(voter => (
+                {voters.map(voter => (
                   <tr key={voter.id}>
                     <td>{voter.externalId}</td>
                     <td>{voter.email}</td>
@@ -490,13 +507,26 @@ const ElectionScreen = () => {
                         ? 'Individually added'
                         : 'Voter file'}
                     </td>
-                    <td>
-                      {voter.latestActivity &&
-                        {
-                          SentBallotUrl: 'Sent ballot',
-                          LoggedIn: 'Logged in',
-                          ConfirmedPrint: 'Confirmed print',
-                        }[voter.latestActivity.activityName]}
+                    <td
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                      }}
+                    >
+                      {(() => {
+                        if (voter.activities.length === 0) return null
+                        return (
+                          <LinkButton
+                            to={`/elections/${electionId}?voterId=${voter.id}`}
+                          >
+                            {prettyActivityName(
+                              voter.activities[voter.activities.length - 1]
+                                .activityName
+                            )}
+                          </LinkButton>
+                        )
+                      })()}
                     </td>
                     <td>
                       {voter.wasManuallyAdded && (
@@ -510,6 +540,59 @@ const ElectionScreen = () => {
               </tbody>
             </FlexTable>
           </>
+        )}
+        {selectedVoter && (
+          <Modal
+            appElement={document.getElementById('root')!}
+            isOpen
+            onRequestClose={() => history.push(`/elections/${electionId}`)}
+            style={{
+              overlay: {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              content: {
+                position: 'static',
+                padding: '30px 40px',
+                minHeight: '20em',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              },
+            }}
+          >
+            <div>
+              <h2>
+                {selectedVoter.externalId} - {selectedVoter.email}
+              </h2>
+              <h3>Voter Activity</h3>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'max-content max-content',
+                  gridGap: '20px',
+                }}
+              >
+                {selectedVoter.activities.map(activity => (
+                  <>
+                    <strong>{prettyActivityName(activity.activityName)}</strong>
+                    <span>{new Date(activity.timestamp).toLocaleString()}</span>
+                  </>
+                ))}
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginTop: '20px',
+              }}
+            >
+              <LinkButton to={`/elections/${electionId}`}>Close</LinkButton>
+            </div>
+          </Modal>
         )}
       </Section>
       {election.data.voters.length > 0 && (

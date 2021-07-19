@@ -57,12 +57,34 @@ export interface VoterUser {
   precinct: string
 }
 
-export const useAuth = () => useQuery('auth', () => apiFetch<Auth>('/auth/me'))
-
 export interface ElectionBase {
   id: string
   definition: ElectionDefinition
 }
+
+export interface Election extends ElectionBase {
+  voters: Voter[]
+}
+
+export interface Voter {
+  id: string
+  externalId: string
+  email: string
+  precinct: string
+  ballotStyle: string
+  ballotEmailLastSentAt: string
+  wasManuallyAdded: boolean
+  activities: VoterActivity[]
+}
+
+export interface VoterActivity {
+  voterId: string
+  activityName: string
+  timestamp: string
+  info: object | null // eslint-disable-line @typescript-eslint/ban-types
+}
+
+export const useAuth = () => useQuery('auth', () => apiFetch<Auth>('/auth/me'))
 
 export const useElections = () =>
   useQuery('elections', () => apiFetch<ElectionBase[]>('/api/elections'))
@@ -94,21 +116,6 @@ export const useDeleteElection = () => {
   return useMutation(deleteElection, {
     onSuccess: () => queryClient.invalidateQueries('elections'),
   })
-}
-
-export interface Election extends ElectionBase {
-  voters: Voter[]
-}
-
-export interface Voter {
-  id: string
-  externalId: string
-  email: string
-  precinct: string
-  ballotStyle: string
-  ballotEmailLastSentAt: string
-  wasManuallyAdded: boolean
-  latestActivity: VoterActivity | null
 }
 
 export const useElection = (electionId: string) =>
@@ -164,7 +171,7 @@ export const useDeleteVoter = (electionId: string) => {
 
 export const useSendBallotEmails = (electionId: string) => {
   const sendBallotEmails = (body: { voterIds: string[]; template: string }) =>
-    apiFetch(`/api/elections/${electionId}/voters/emails`, {
+    apiFetch(`/api/elections/${electionId}/emails`, {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-type': 'application/json' },
@@ -173,13 +180,6 @@ export const useSendBallotEmails = (electionId: string) => {
   return useMutation(sendBallotEmails, {
     onSuccess: () => queryClient.invalidateQueries(['elections', electionId]),
   })
-}
-
-interface VoterActivity {
-  voterId: string
-  activityName: string
-  timestamp: string
-  info: object | null // eslint-disable-line @typescript-eslint/ban-types
 }
 
 export const useRecordVoterActivity = (electionId: string) => {

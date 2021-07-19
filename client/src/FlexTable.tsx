@@ -30,6 +30,7 @@ const FlexTable = styled.table<FlexTableProps>`
   }
   tr {
     display: flex;
+    align-items: center;
   }
   tr:nth-child(even) {
     background: #edeff0;

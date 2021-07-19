@@ -57,15 +57,6 @@ def get_election(election_id: str):
     voters = (
         Voter.query.filter_by(election_id=election_id).order_by(Voter.external_id).all()
     )
-
-    def serialize_activity(activity: VoterActivity):
-        return dict(
-            voterId=activity.voter_id,
-            activityName=activity.activity_name,
-            timestamp=activity.created_at,
-            info=activity.info,
-        )
-
     return jsonify(
         id=election.id,
         definition=election.definition,
@@ -78,11 +69,14 @@ def get_election(election_id: str):
                 ballotStyle=voter.ballot_style,
                 ballotEmailLastSentAt=isoformat(voter.ballot_email_last_sent_at),
                 wasManuallyAdded=voter.was_manually_added,
-                latestActivity=(
-                    serialize_activity(voter.activities[-1])
-                    if len(voter.activities) > 0
-                    else None
-                ),
+                activities=[
+                    dict(
+                        activityName=activity.activity_name,
+                        timestamp=isoformat(activity.created_at),
+                        info=activity.info,
+                    )
+                    for activity in voter.activities
+                ],
             )
             for voter in voters
         ],
@@ -234,10 +228,8 @@ def add_voter(election_id: str):
 
 
 @api.route("/elections/<election_id>/voters/<voter_id>", methods=["DELETE"])
-def delete_voter(election_id: str, voter_id: str):
-    voter = Voter.query.filter_by(election_id=election_id, id=voter_id).one_or_none()
-    if voter is None:
-        return NotFound()
+def delete_voter(election_id: str, voter_id: str):  # pylint: disable=unused-argument
+    voter = get_or_404(Voter, voter_id)
     if not voter.was_manually_added:
         return Conflict(
             "Cannot individually delete voters that were not individually added"
@@ -247,7 +239,7 @@ def delete_voter(election_id: str, voter_id: str):
     return jsonify(status="ok")
 
 
-@api.route("/elections/<election_id>/voters/emails", methods=["POST"])
+@api.route("/elections/<election_id>/emails", methods=["POST"])
 def send_voter_ballot_emails(election_id: str):
     email_request = cast(dict, request.get_json())
     voters = (
