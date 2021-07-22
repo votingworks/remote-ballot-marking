@@ -7,6 +7,7 @@ import React, {
 } from 'react'
 import { setConstantValue } from 'typescript'
 import Button from '../components/Button'
+import LinkButton from '../components/LinkButton'
 import Loading from '../components/Loading'
 import Main, { MainChild } from '../components/Main'
 import PrintedBallot from '../components/PrintedBallot'
@@ -49,9 +50,9 @@ const PrintPage = () => {
             {hasPrinted && (
               <Prose textCenter>
                 <p>
-                  <h1>Did you successfully print your ballot?</h1>
+                  <h1>Does your printed ballot have the correct selections?</h1>
                 </p>
-                <Button onPress={() => printBallot()}>No - Print again</Button>
+                <LinkButton to="/review">No - Review selections</LinkButton>
                 <Button
                   primary
                   onPress={() => markVoterCardPrinted()}
@@ -59,6 +60,9 @@ const PrintPage = () => {
                 >
                   Yes - Continue
                 </Button>
+                <p>
+                  <Button onPress={() => printBallot()}>Print again</Button>
+                </p>
               </Prose>
             )}
           </MainChild>
