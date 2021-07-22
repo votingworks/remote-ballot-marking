@@ -529,11 +529,9 @@ const ElectionScreen = () => {
                       })()}
                     </td>
                     <td>
-                      {voter.wasManuallyAdded && (
-                        <Button onClick={() => onClickDeleteVoter(voter.id)}>
-                          Delete
-                        </Button>
-                      )}
+                      <Button onClick={() => onClickDeleteVoter(voter.id)}>
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}

@@ -97,7 +97,10 @@ class Voter(BaseModel):
     ballot_email_last_sent_at = Column(UTCDateTime)
 
     activities = relationship(
-        "VoterActivity", uselist=True, order_by="VoterActivity.created_at"
+        "VoterActivity",
+        uselist=True,
+        order_by="VoterActivity.created_at",
+        cascade="all, delete-orphan",
     )
 
     __table_args__ = (

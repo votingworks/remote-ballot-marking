@@ -230,10 +230,6 @@ def add_voter(election_id: str):
 @api.route("/elections/<election_id>/voters/<voter_id>", methods=["DELETE"])
 def delete_voter(election_id: str, voter_id: str):  # pylint: disable=unused-argument
     voter = get_or_404(Voter, voter_id)
-    if not voter.was_manually_added:
-        return Conflict(
-            "Cannot individually delete voters that were not individually added"
-        )
     db_session.delete(voter)
     db_session.commit()
     return jsonify(status="ok")
